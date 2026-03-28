@@ -1,0 +1,100 @@
+{
+  "id": "ch-algorithms",
+  "title": "数据结构与算法",
+  "tag": "algo",
+  "tagLabel": "工程基础",
+  "desc": "把面试里最常问、又最容易和 ML 工程场景脱节的算法基础，重新讲成能在数据处理、检索、训练服务里直接用得上的 5 张卡片。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "complexity",
+      "title": "时间复杂度与空间复杂度",
+      "subtitle": "同样能跑完，为什么上线后一个版本快一个数量级？",
+      "icon": "⏱️",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点，再引出术语", "text": "你把 100 条样本的小脚本直接搬到离线特征生成里，数据量从 100 变成 100 万后，原来 1 秒的逻辑突然要跑几个小时。描述这种'输入一放大，耗时怎么跟着放大'的快捷术语，叫**时间复杂度**；描述它额外吃掉多少内存的术语，叫**空间复杂度**。在 ML/DL 工程里，数据预处理、召回去重、日志聚合都先死在复杂度，而不是先死在模型公式。"},
+        {"type": "formula", "layer": 1, "content": "$$T(n)=O(f(n)),\\quad S(n)=O(g(n))$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式解释", "labelTitle": "其中", "text": "其中：$n$ 是输入规模，$T(n)$ 是耗时增长趋势，$S(n)$ 是额外内存增长趋势。重点不是精确到 0.003 秒，而是看规模翻倍后，成本是线性涨、平方涨，还是对数涨。"},
+        {"type": "trap", "layer": 1, "title": "⚠️ 如果不先看复杂度", "content": "小数据集上的'能跑通'很容易掩盖坏算法。`O(n^2)` 在 100 条样本时像没问题，但到 10^6 条时会从 10^6 次操作变成 10^12 次，模型还没训练，预处理就先堵死。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "example", "badge": "数字玩具模型", "labelTitle": "用 3 个规模感受差距", "text": "假设一次基本操作耗时 1 微秒。若算法 A 是 $O(n)$，算法 B 是 $O(n^2)$，当 $n=10^3$ 时，A 约 1 ms，B 约 1 s；当 $n=10^6$ 时，A 约 1 s，B 约 11.6 天。这就是为什么向量库建索引、特征表 join、日志去重都要先问复杂度。"},
+        {"type": "table", "layer": 2, "headers": ["规模 n", "O(n)", "O(n^2)", "工程感受"], "rows": [["10^3", "10^3", "10^6", "都还能忍"], ["10^6", "10^6", "10^12", "平方级直接爆炸"], ["2^20", "20 次二分", "约 10^6 次线扫", "检索延迟差很多"]]},
+        {"type": "kitem", "layer": 2, "labelType": "compare", "badge": "面试常追问", "labelTitle": "时间换空间", "text": "哈希表查找常把时间从线性降到均摊常数，但要额外空间；原地双指针节省空间，却常要求输入有序。面试官问复杂度，本质是在问你会不会为真实系统做资源交换。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么 AI 工程师也要会时间复杂度？\n\n答：因为模型训练和服务系统外面包着大量数据处理、检索、去重、缓存逻辑，很多瓶颈根本不在神经网络里，而在 `O(n^2)` 级的数据操作里。复杂度分析能让我在规模放大前预判吞吐和内存风险。"},
+        {"type": "code", "layer": 3, "title": "从零实现：统计两种写法的操作次数", "content": "def count_linear_ops(arr):\n    ops = 0\n    for _ in arr:\n        ops += 1  # 每访问一个元素就记一次，模拟 O(n)\n    return ops\n\n\ndef count_quadratic_ops(arr):\n    ops = 0\n    for _ in arr:\n        for _ in arr:\n            ops += 1  # 双层循环说明每个元素都和全部元素配对，模拟 O(n^2)\n    return ops\n\n\nnums = list(range(5))\nprint(count_linear_ops(nums))\nprint(count_quadratic_ops(nums))"}
+      ]
+    },
+    {
+      "id": "dynamic-programming",
+      "title": "动态规划",
+      "subtitle": "同一个子问题反复算，为什么 GPU 很强也救不了你？",
+      "icon": "🧩",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点，再引出术语", "text": "你在做序列切分或编辑距离时，递归函数一直在重复问同一个小问题，CPU 风扇狂转，结果却没推进多少。把'大问题拆成重复子问题，并把已算答案存下来复用'的套路，叫**动态规划**。在 NLP 文本对齐、CTC 解码、时间序列切分和批处理调度里，这种思路经常比硬堆算力更关键。"},
+        {"type": "formula", "layer": 1, "content": "$$dp[i]=\\min_{j\\lt i}\\{dp[j]+cost(j,i)\\}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式解释", "labelTitle": "其中", "text": "其中：$dp[i]$ 表示做到第 $i$ 个位置时的最优值，$cost(j,i)$ 表示从状态 $j$ 转到 $i$ 的代价。动态规划的核心不是背公式，而是认出'状态、转移、边界'。"},
+        {"type": "trap", "layer": 1, "title": "⚠️ 如果不缓存子问题", "content": "重复子问题会让递归树指数爆炸。比如斐波那契递归里，`f(3)` 会被多次重算；在真实工程里，这类重复会出现在 beam search 打分、文本切分和路径代价计算里。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "example", "badge": "数字玩具模型", "labelTitle": "爬楼梯为什么是 DP", "text": "假设你每次能爬 1 阶或 2 阶，要到第 5 阶。若记 $dp[i]$ 为到第 $i$ 阶的方法数，则 $dp[1]=1, dp[2]=2$，接着 $dp[3]=3, dp[4]=5, dp[5]=8$。因为到第 5 阶只可能从第 4 阶跨 1 步，或从第 3 阶跨 2 步，所以复用前面的解就够了。"},
+        {"type": "formula", "layer": 2, "content": "$$dp[i]=dp[i-1]+dp[i-2]$$"},
+        {"type": "kitem", "layer": 2, "labelType": "compare", "badge": "ML 连接", "labelTitle": "为什么和 ML 流程有关", "text": "Viterbi 解码、最短编辑路径、分词、动态时间规整都在做 DP。你不一定天天手写 Viterbi，但面试官想确认你知道：很多看似'模型推理'的问题，底层其实是状态转移表。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：动态规划和分治最大的区别是什么？\n\n答：两者都把大问题拆小，但动态规划要求子问题有重叠，所以会缓存结果避免重复计算；分治通常把问题拆成相互独立的子问题，再把结果合并。识别重叠子问题，是 DP 的起点。"},
+        {"type": "code", "layer": 3, "title": "从零实现：爬楼梯 DP", "content": "def climb_stairs(n):\n    if n <= 2:\n        return n  # 小边界直接返回，避免后面转移越界\n\n    dp = [0] * (n + 1)\n    dp[1] = 1  # 到第 1 阶只有一种走法\n    dp[2] = 2  # 到第 2 阶可以 1+1 或直接 2\n\n    for i in range(3, n + 1):\n        dp[i] = dp[i - 1] + dp[i - 2]  # 只从前一阶和前两阶转移，体现重叠子问题复用\n\n    return dp[n]\n\n\nprint(climb_stairs(5))"}
+      ]
+    },
+    {
+      "id": "graph-search",
+      "title": "图搜索：BFS / DFS",
+      "subtitle": "服务依赖一团乱时，为什么有人先用队列，有人先用栈？",
+      "icon": "🗺️",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点，再引出术语", "text": "你排查线上推荐服务超时，发现请求会经过特征服务、缓存层、召回层、重排层，多条依赖线交错在一起。这时节点和边组成的结构，叫**图**；按层一圈圈扩出去找最短边数路径，叫**BFS**；沿着一条路先钻到底再回溯，叫**DFS**。在知识图谱遍历、任务 DAG 调度、依赖分析和最短 hop 检索里，BFS/DFS 是基础动作。"},
+        {"type": "formula", "layer": 1, "content": "$$|V|+|E|$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "复杂度", "labelTitle": "其中", "text": "其中：$|V|$ 是节点数，$|E|$ 是边数。无论 BFS 还是 DFS，只要用邻接表并且每个节点、每条边最多处理一次，时间复杂度通常都是 $O(|V|+|E|)$。"},
+        {"type": "trap", "layer": 1, "title": "⚠️ 如果图搜索不用 visited", "content": "有环图会让你在几个节点之间来回兜圈。服务依赖排查、网页爬取、知识图谱遍历如果没 visited 集合，轻则重复工作，重则直接死循环。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "example", "badge": "数字玩具模型", "labelTitle": "4 个节点走一遍", "text": "设 A 连到 B、C，B 连到 D，C 也连到 D。BFS 从 A 出发，队列过程是 `[A] -> [B,C] -> [C,D]`，第一次到 D 的路径长度是 2 条边，所以 BFS 能找最少 hop。DFS 若按 A->B->D 先走，也能到 D，但它保证的是'先深入'，不是'先最短'。"},
+        {"type": "table", "layer": 2, "headers": ["方法", "核心数据结构", "最擅长", "ML/工程例子"], "rows": [["BFS", "队列", "无权图最短 hop", "服务依赖最短链路、知识图谱 k-hop"], ["DFS", "栈/递归", "连通性、回溯、拓扑探索", "计算图依赖遍历、文件树扫描"]]},
+        {"type": "kitem", "layer": 2, "labelType": "compare", "badge": "记忆钩子", "labelTitle": "怎么秒答区别", "text": "BFS 像水波，一层层扩散，所以更自然地拿最短边数路径；DFS 像探洞，先扎到底，适合回溯、枚举、环检测。面试里别只说队列和栈，要说它们解决的问题目标不同。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：什么时候你会优先选 BFS，而不是 DFS？\n\n答：当目标是无权图里的最短 hop 路径时，我会优先选 BFS，因为它按层扩展，第一次到达目标节点就是最短边数。若目标是回溯、拓扑探索或整图连通性扫描，DFS 通常更顺手。"},
+        {"type": "code", "layer": 3, "title": "从零实现：BFS 最短 hop", "content": "from collections import deque\n\n\ndef bfs_shortest_hops(graph, start, target):\n    queue = deque([(start, 0)])\n    visited = {start}  # 一入队就标记，防止同一层被重复加入\n\n    while queue:\n        node, dist = queue.popleft()\n        if node == target:\n            return dist  # BFS 第一次到达目标时，边数已经最少\n\n        for nei in graph.get(node, []):\n            if nei not in visited:\n                visited.add(nei)\n                queue.append((nei, dist + 1))\n\n    return -1\n\n\ngraph = {\"A\": [\"B\", \"C\"], \"B\": [\"D\"], \"C\": [\"D\"], \"D\": []}\nprint(bfs_shortest_hops(graph, \"A\", \"D\"))"}
+      ]
+    },
+    {
+      "id": "hash-table",
+      "title": "哈希表",
+      "subtitle": "去重 1 亿条 user_id 时，为什么 list 会把你拖垮？",
+      "icon": "#️⃣",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点，再引出术语", "text": "你在做日志去重，想判断一个 `user_id` 是否见过。如果把历史 id 放在 list 里，每次都线性扫描，数据一大就开始拖垮离线作业。把 key 通过**哈希函数**映射到桶，再做近似常数时间查找的结构，叫**哈希表**。在特征字典、token 到 id 映射、缓存、去重、计数器里，它都是默认武器。"},
+        {"type": "formula", "layer": 1, "content": "$$index=h(key)\\bmod m$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式解释", "labelTitle": "其中", "text": "其中：$h(key)$ 是哈希函数输出，$m$ 是桶数量。目标不是绝对不冲突，而是把 key 尽量均匀打散，让查找、插入、删除的均摊复杂度接近 $O(1)$。"},
+        {"type": "trap", "layer": 1, "title": "⚠️ 如果把冲突想成不会发生", "content": "不同 key 可能落进同一个桶，这叫哈希冲突。冲突太多时，哈希表会退化，查找从均摊常数掉回接近线性，所以负载因子和扩容策略很重要。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "example", "badge": "数字玩具模型", "labelTitle": "5 个桶装 3 个 key", "text": "假设有 5 个桶，哈希后得到 `13 -> 3`, `18 -> 3`, `24 -> 4`。这里 13 和 18 冲突，都落在桶 3。若用链地址法，桶 3 里会挂一个小链表 `[13,18]`。这说明哈希表快，不是因为没冲突，而是因为正常情况下每个桶不会挤太多人。"},
+        {"type": "table", "layer": 2, "headers": ["结构", "查找", "插入", "典型用途"], "rows": [["list", "O(n)", "尾插 O(1)", "保序遍历"], ["hash table", "均摊 O(1)", "均摊 O(1)", "去重、缓存、词表映射"], ["sorted array", "O(\\log n)", "O(n)", "静态查找"]]},
+        {"type": "kitem", "layer": 2, "labelType": "compare", "badge": "ML 连接", "labelTitle": "为什么模型工程离不开它", "text": "Tokenizer 词表查 token id、特征工程查类别编码、在线服务查缓存命中，本质上都在做 key 查找。你看到 Python `dict` 很顺手，但面试官想知道你明白它为什么能快，以及什么时候会因为冲突、扩容和内存占用付代价。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：哈希表为什么通常是 O(1)，又为什么不是绝对 O(1)？\n\n答：因为 key 经哈希后能直接定位到桶，平均情况下不用全表扫描，所以查找和插入是均摊 O(1)。但若冲突严重或负载因子过高，单桶会变长，性能会退化到接近 O(n)。"},
+        {"type": "code", "layer": 3, "title": "从零实现：极简链地址哈希表", "content": "class SimpleHashTable:\n    def __init__(self, size=5):\n        self.size = size\n        self.buckets = [[] for _ in range(size)]  # 每个桶先用小列表模拟链地址法\n\n    def _hash(self, key):\n        return key % self.size  # 用最简单的模运算演示桶映射关系\n\n    def put(self, key, value):\n        idx = self._hash(key)\n        bucket = self.buckets[idx]\n        for i, (k, _) in enumerate(bucket):\n            if k == key:\n                bucket[i] = (key, value)  # 已存在就覆盖，保持 key 唯一\n                return\n        bucket.append((key, value))  # 冲突时挂到同一个桶后面\n\n    def get(self, key):\n        idx = self._hash(key)\n        for k, v in self.buckets[idx]:\n            if k == key:\n                return v\n        return None\n\n\nht = SimpleHashTable()\nht.put(13, \"alice\")\nht.put(18, \"bob\")\nprint(ht.get(18))"}
+      ]
+    },
+    {
+      "id": "binary-search",
+      "title": "二分搜索与双指针",
+      "subtitle": "延迟阈值、窗口边界、排好序的数据，为什么还在线性扫？",
+      "icon": "🔍",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点，再引出术语", "text": "你已经把延迟日志排好序，却还从头扫到尾找第一个超过 200 ms 的请求；你想在升序数组里找和为目标值的两个数，却还是暴力枚举所有配对。对有序空间反复砍半找边界，叫**二分搜索**；左右两个索引按规则收缩搜索区间，叫**双指针**。在阈值调参、分位点统计、滑动窗口和召回后去重里，这两招很常见。"},
+        {"type": "formula", "layer": 1, "content": "$$mid=\\left\\lfloor\\frac{l+r}{2}\\right\\rfloor$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式解释", "labelTitle": "其中", "text": "其中：$l$ 是左边界，$r$ 是右边界，$mid$ 是中点。每次比较后都能砍掉一半区间，所以二分搜索的时间复杂度是 $O(\\log n)$。双指针常见于有序数组和窗口问题，很多题能把 `O(n^2)` 压到 `O(n)`。"},
+        {"type": "trap", "layer": 1, "title": "⚠️ 如果数据有序却不用边界信息", "content": "你就等于浪费了排序付出的成本。很多延迟阈值、分桶边界、top-k 前置过滤问题，本来可以对数或线性解决，结果因为忘了利用单调性，退回暴力扫描。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "example", "badge": "数字玩具模型", "labelTitle": "二分和双指针各走一次", "text": "数组 `[2,4,7,9,13,18,21,30]` 中找第一个大于等于 13 的位置。二分先看中点 9，再看 18，再收缩到 13，只用 3 次比较。若在有序数组 `[1,2,4,6,10]` 中找和为 8 的两数，双指针从 `(1,10)` 开始，和太大就右指针左移，最后到 `(2,6)` 命中。"},
+        {"type": "table", "layer": 2, "headers": ["方法", "适用前提", "复杂度", "工程例子"], "rows": [["二分搜索", "有序或答案单调", "O(\\log n)", "找延迟阈值、查分位边界"], ["双指针", "有序数组或滑窗条件", "O(n)", "两数之和、去重、最长窗口"], ["暴力枚举", "无结构可用", "O(n^2)", "基线方案"]]},
+        {"type": "kitem", "layer": 2, "labelType": "compare", "badge": "面试常追问", "labelTitle": "二分的不变量", "text": "写二分最容易错在边界。你必须先定义不变量，比如'答案一定在 `[l,r]` 里'，然后保证每次更新后这个条件仍然成立。双指针也一样，移动哪一边不是拍脑袋，而是由单调性决定。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：二分搜索为什么不只是'在数组里找数'？\n\n答：因为它本质上是在单调空间里找边界，不一定非得是数组元素。只要条件对答案呈单调性，比如阈值、容量、最小时延、可行 batch size，就能二分。"},
+        {"type": "code", "layer": 3, "title": "从零实现：左边界二分 + 双指针两数之和", "content": "def lower_bound(nums, target):\n    l, r = 0, len(nums) - 1\n    ans = len(nums)  # 先假设不存在合法位置，便于统一处理\n\n    while l <= r:\n        mid = (l + r) // 2\n        if nums[mid] >= target:\n            ans = mid  # 当前 mid 合法，但还要继续向左找最早位置\n            r = mid - 1\n        else:\n            l = mid + 1\n\n    return ans\n\n\ndef two_sum_sorted(nums, target):\n    l, r = 0, len(nums) - 1\n    while l < r:\n        s = nums[l] + nums[r]\n        if s == target:\n            return l, r\n        if s < target:\n            l += 1  # 和太小，只有增大左值才可能接近目标\n        else:\n            r -= 1  # 和太大，右值左移才能让总和下降\n    return -1, -1\n\n\nprint(lower_bound([2, 4, 7, 9, 13, 18], 13))\nprint(two_sum_sorted([1, 2, 4, 6, 10], 8))"}
+      ]
+    }
+  ]
+}

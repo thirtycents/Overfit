@@ -1,0 +1,315 @@
+{
+  "id": "ch-numerical",
+  "title": "数值计算",
+  "tag": "math",
+  "tagLabel": "工程数值基础",
+  "desc": "从精度、稳定性、条件数、自动微分到矩阵分解，建立 ML/DL 里最常见的数值直觉。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "floating-point",
+      "title": "浮点精度",
+      "subtitle": "FP32 / BF16 / FP16 到底在换什么",
+      "icon": "🧮",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "工程痛点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你把一段训练脚本从 FP32 改成 FP16 后，显存是省了，但 loss 突然变成 NaN，梯度也开始发散。这里卡住你的不是模型结构，而是**浮点数表示 (Floating Point)** 本身。FP32、BF16、FP16 都只是在有限 bit 里同时分配\"范围\"和\"精度\"，分配得不对，就会出现溢出、下溢，或把小更新直接舍入掉。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$x = (-1)^s \\times m \\times 2^e$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "formula",
+          "badge": "变量解释 + 玩具模型",
+          "labelTitle": "范围和精度怎么分家",
+          "text": "其中：$s$ 控制符号，$e$ 决定可表示范围，$m$ 决定有效数字多少。玩具模型：在 1.0 附近，FP16 的最小间隔约是 $2^{-10} \\approx 0.00098$，BF16 约是 $2^{-7} \\approx 0.0078$，所以 1.001 在 FP16 里通常还能分出来，在 BF16 里常会被舍入回 1.0；但 FP16 的最大有限值约 65504，70000 会直接溢出，而 BF16 和 FP32 因为指数位更大，更能扛大激活和大梯度。这就是为什么大模型训练常偏向 BF16，而不是盲目追求更省显存的 FP16。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "derivation",
+          "badge": "推导直觉",
+          "labelTitle": "为什么 BF16 常比 FP16 更稳",
+          "text": "核心不是\"谁位数少\"，而是\"指数位和尾数位怎么分\"。FP32 用 8 位指数 + 23 位尾数，范围和精度都够；FP16 用 5 位指数 + 10 位尾数，靠更细的小数换更窄的范围；BF16 用 8 位指数 + 7 位尾数，牺牲小数精度换回接近 FP32 的动态范围。ML/DL 里前向激活、attention logits、梯度范数都可能突然变大，所以训练时先保命，常常比多留几位小数更重要。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "BF16 的小数精度其实比 FP16 更粗，但它往往更适合大模型训练，因为训练里更常见的灾难是溢出，不是最后几位小数不够细。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["格式", "指数位", "尾数位", "最突出优点", "典型 ML/DL 场景"],
+          "rows": [["FP32", "8", "23", "精度高，调试稳", "基准训练、master weights"], ["BF16", "8", "7", "范围大，不易溢出", "大模型训练"], ["FP16", "5", "10", "显存省，局部更细", "混合精度训练、推理"]]
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从零感受范围和精度",
+          "content": "import math\n\ndef round_to_grid(x, step):\n    return round(x / step) * step  # 用固定间隔近似表示\"这一格式在这个量级下能分多细\"\n\ndef demo_precision():\n    fp16_step = 2 ** -10  # FP16 在 1.0 附近更细，所以 1.001 还能被分开\n    bf16_step = 2 ** -7   # BF16 在 1.0 附近更粗，所以 1.001 往往会被吃掉\n    x = 1.001\n    print('fp16 near 1.0 ->', round_to_grid(x, fp16_step))\n    print('bf16 near 1.0 ->', round_to_grid(x, bf16_step))\n\ndef demo_range():\n    x = 70000.0\n    fp16_max = 65504.0  # 先看范围上限，理解为什么大激活会直接炸掉\n    print('fp16 overflow?', x > fp16_max)\n    print('bf16/fp32 can still represent large magnitudes because exponent range is much wider')\n\ndemo_precision()\ndemo_range()"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么大模型训练里很多团队更喜欢 BF16，而不是 FP16？\n\n答：因为 BF16 保留了和 FP32 接近的指数范围，更不容易在激活和梯度上溢出。它虽然尾数更短，精度更粗，但训练里先保证数值不炸，通常比多保留几位小数更关键。"
+        }
+      ]
+    },
+    {
+      "id": "numerical-stability",
+      "title": "数值稳定性：Log-Sum-Exp 技巧",
+      "subtitle": "softmax 为什么一定先减 max",
+      "icon": "📈",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "工程痛点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你把 logits 写成 [1000, 999, 998]，理论上 softmax 当然能算，但程序里 `exp(1000)` 往往直接上溢成 `inf`。如果 logits 是 [-1000, -1001]，又会下溢到 0，最后变成 `0/0`。这时你需要的不是另一个损失函数，而是**数值稳定性 (Numerical Stability)**，最经典的技巧就叫 **Log-Sum-Exp**。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\log \\sum_{i=1}^{n} \\exp(x_i) = m + \\log \\sum_{i=1}^{n} \\exp(x_i - m), \\quad m = \\max_i x_i$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "formula",
+          "badge": "变量解释 + 玩具模型",
+          "labelTitle": "为什么减去最大值不改变结果",
+          "text": "其中：$x_i$ 是第 $i$ 个 logit，$m$ 是所有 logits 里的最大值。玩具模型：$x=[1000,999,998]$ 时，取 $m=1000$，则 $\\exp(x-m)=[1,e^{-1},e^{-2}]$，和约为 1.5032，所以 log-sum-exp 变成 $1000 + \\log 1.5032 \\approx 1000.4076$。softmax 也一样，先减 max 再指数化，得到概率约为 [0.6652, 0.2447, 0.0900]。在 cross-entropy、attention logits、混合专家门控里，这一步都是标准动作。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "derivation",
+          "badge": "推导过程",
+          "labelTitle": "为什么这个恒等式成立",
+          "text": "因为对任何常数 $m$，都有 $\\sum_i \\exp(x_i) = \\exp(m) \\sum_i \\exp(x_i-m)$，再整体取对数即可。关键是选 $m=\\max x$ 之后，所有 $x_i-m$ 都不会是正的大数，于是最大的指数项刚好变成 1，其余都落在 0 到 1 之间。这样既避免上溢，也避免所有项一起下溢成 0。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "先减最大值不是在\"改模型输出\"，而是在利用 softmax 对整体平移不敏感这个性质，把同一个数学结果搬到计算机更能承受的数值区间里。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["输入 logits", "直接 exp", "先减 max", "结论"],
+          "rows": [["[1000,999,998]", "上溢成 inf", "[1,e^-1,e^-2]", "可稳定求 softmax"], ["[-1000,-1001]", "下溢成 0", "[1,e^-1]", "避免 0/0"]]
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "稳定版 log-sum-exp 和 softmax",
+          "content": "import math\n\ndef stable_logsumexp(xs):\n    m = max(xs)  # 先取最大值，是为了把最大的指数项钉在 1 上\n    shifted = [math.exp(x - m) for x in xs]  # 所有指数项都搬到安全区间，避免溢出\n    return m + math.log(sum(shifted))  # 最后再把平移量加回去，数学结果不变\n\ndef stable_softmax(xs):\n    m = max(xs)  # softmax 也要先减 max，因为它只关心相对差值\n    exps = [math.exp(x - m) for x in xs]\n    z = sum(exps)\n    return [v / z for v in exps]  # 分母此时不会被 inf 或 0 破坏\n\nxs = [1000.0, 999.0, 998.0]\nprint(stable_logsumexp(xs))\nprint(stable_softmax(xs))"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 log-sum-exp 和 softmax 都要先减去最大值？\n\n答：因为指数函数增长太快，直接算会在大正数上 overflow，在大负数上 underflow。减去最大值后，最大的指数项变成 1，其余都落进安全区间，而且 softmax 对整体平移不敏感，所以数学结果不变。"
+        }
+      ]
+    },
+    {
+      "id": "condition-number",
+      "title": "条件数",
+      "subtitle": "为什么输入只改一点，解会跳很多",
+      "icon": "⚠️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "工程痛点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你在做线性回归或牛顿法时，明明数据只轻微抖了一下，解却突然大变样。这里暴露的不是优化器脾气，而是矩阵的**条件数 (Condition Number)**。条件数描述的是，输入里的微小扰动会被系统放大多少。条件数一旦很大，模型就会对噪声、共线特征和有限精度异常敏感。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\kappa(A) = \\|A\\| \\cdot \\|A^{-1}\\| \\approx \\frac{\\sigma_{\\max}(A)}{\\sigma_{\\min}(A)}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "formula",
+          "badge": "变量解释 + 玩具模型",
+          "labelTitle": "一个几乎共线的 2x2 例子",
+          "text": "其中：$\\sigma_{\\max}$ 和 $\\sigma_{\\min}$ 是最大、最小奇异值。玩具模型：$A=\\begin{bmatrix}1&1\\\\1&1.001\\end{bmatrix}$，$b=[2,2.001]^T$ 时，解是 $x=[1,1]^T$；如果只把第二个观测改成 2.002，解会跳成 $x=[0,2]^T$。右边只改了 0.001，答案却变了整整 1，这就是高条件数在放大误差。ML 里遇到高度相关特征、病态 Hessian、normal equation 求解不稳，本质都和它有关。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "derivation",
+          "badge": "推导直觉",
+          "labelTitle": "为什么最小奇异值小会很危险",
+          "text": "如果 $\\sigma_{\\min}(A)$ 很小，说明某个方向上的信息几乎被压扁了。你在这个方向上看到的观测差异非常小，但反求解时要除以一个很小的数，于是噪声和舍入误差都会被成倍放大。对训练来说，这会表现为损失面又窄又长，梯度下降在一个方向上很敏感，在另一个方向上又挪不动。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "矩阵不可逆不是最常见的实际问题，真正折磨工程的是\"看起来还能逆，但逆出来特别不稳\"。这正是高条件数比奇异矩阵更常见也更隐蔽的地方。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["条件数", "直觉", "训练/求解表现"],
+          "rows": [["接近 1", "各方向缩放差不多", "数值稳定，更新平滑"], ["很大", "某些方向几乎被压扁", "对噪声敏感，解和梯度容易乱跳"]]
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "手算 2x2 扰动放大",
+          "content": "def solve_2x2(a, b, c, d, y1, y2):\n    det = a * d - b * c  # 先看行列式，是为了知道这个系统离\"不可逆\"有多近\n    x1 = (d * y1 - b * y2) / det  # 用闭式解直接展示微小扰动会被怎么放大\n    x2 = (-c * y1 + a * y2) / det\n    return [x1, x2]\n\nA = (1.0, 1.0, 1.0, 1.001)\nbase = solve_2x2(*A, 2.0, 2.001)\nperturbed = solve_2x2(*A, 2.0, 2.002)\nprint('base solution =', base)\nprint('perturbed solution =', perturbed)"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：条件数大到底意味着什么，为什么 ML 里要关心它？\n\n答：条件数大表示输入中的微小误差会在求解时被大幅放大，所以模型会对噪声和有限精度非常敏感。在 ML 里，这通常对应特征共线、病态 Hessian 和不稳定的线性系统求解。"
+        }
+      ]
+    },
+    {
+      "id": "automatic-differentiation",
+      "title": "自动微分 vs 数值微分",
+      "subtitle": "为什么深度学习不能靠试一试求梯度",
+      "icon": "🔁",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "工程痛点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你有 1 亿个参数，想知道 loss 对每个参数的梯度。如果用数值微分，每个参数都要额外做前向，成本直接爆炸。深度学习之所以能训练起来，靠的是**自动微分 (Automatic Differentiation, Autograd)**，它把整张计算图拆开，用链式法则一次反传拿到所有局部导数。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\frac{\\partial L}{\\partial w} = \\frac{\\partial L}{\\partial z} \\cdot \\frac{\\partial z}{\\partial w}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "formula",
+          "badge": "变量解释 + 玩具模型",
+          "labelTitle": "2 步链式法则先走一遍",
+          "text": "其中：$w$ 是参数，$z$ 是中间节点，$L$ 是最终损失。玩具模型：令 $x=2,w=3,b=1$，则 $z=wx+b=7$，$L=z^2=49$。自动微分会先算 $\\partial L / \\partial z = 14$，再算 $\\partial z / \\partial w = 2$，所以 $\\partial L / \\partial w = 28$。如果用前向差分，取 $h=0.001$，有 $(L(w+h)-L(w))/h \\approx 28.004$，看起来接近，但参数一多就要重复无数次，而且 $h$ 太大有截断误差，太小又会被浮点舍入干扰。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "derivation",
+          "badge": "推导过程",
+          "labelTitle": "自动微分快在哪里",
+          "text": "数值微分的代价和参数个数近似成正比，参数越多，前向次数越多。反向模式自动微分则把局部导数缓存到计算图里，先做一次前向拿到中间量，再做一次反向把梯度一路乘回去，所以对标量损失来说非常划算。神经网络训练里的 backprop，本质上就是反向模式自动微分。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "自动微分不是符号求导，也不是数值微分。它不去推代数表达式，也不去试探微小扰动，而是沿着真实计算图传播局部导数，所以又快又准。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方法", "核心思路", "误差来源", "适合场景"],
+          "rows": [["数值微分", "扰动参数后比较输出", "步长选择 + 浮点误差", "梯度检查"], ["自动微分", "沿计算图传播局部导数", "实现 bug 或图断裂", "训练神经网络"]]
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "同一个函数，比较两种求导",
+          "content": "def forward(w, x=2.0, b=1.0):\n    z = w * x + b  # 先保留中间节点，是为了反向时直接复用局部导数\n    loss = z ** 2   # 标量损失最适合展示反向模式自动微分的优势\n    return z, loss\n\ndef numerical_grad(w, h=1e-3):\n    _, l1 = forward(w)\n    _, l2 = forward(w + h)\n    return (l2 - l1) / h  # 用扰动近似导数，步长选不好就会偏\n\ndef autodiff_grad(w):\n    z, loss = forward(w)\n    dloss_dz = 2 * z      # 先对最后一层求局部导数\n    dz_dw = 2.0           # 再对中间节点求局部导数\n    return dloss_dz * dz_dw  # 链式法则把局部导数乘回去\n\nprint(numerical_grad(3.0))\nprint(autodiff_grad(3.0))"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：自动微分为什么比数值微分更适合训练深度网络？\n\n答：因为数值微分对每个参数都要重复前向计算，成本随参数量线性爆炸，而且还受步长误差影响。自动微分沿计算图反向传播局部导数，对标量 loss 可以在一次前向加一次反向里高效拿到全部梯度。"
+        }
+      ]
+    },
+    {
+      "id": "matrix-decomposition",
+      "title": "矩阵分解",
+      "subtitle": "LU / Cholesky / SVD 各自解决什么问题",
+      "icon": "🧩",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "工程痛点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你要反复解 $Ax=b$、做协方差建模，或把大矩阵压缩成低秩近似。如果每次都显式求逆，既慢又不稳。更靠谱的思路是先做**矩阵分解 (Matrix Decomposition)**，把原矩阵拆成更容易求解、采样或压缩的因子。不同分解对应不同结构假设，所以 LU、Cholesky、SVD 解决的其实不是同一个问题。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$A = LU, \\quad A = LL^T, \\quad A = U\\Sigma V^T$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "formula",
+          "badge": "变量解释 + 玩具模型",
+          "labelTitle": "三个最常见分解怎么读",
+          "text": "其中：$L$ 常是下三角矩阵，$U$ 常是上三角矩阵，$\\Sigma$ 放奇异值。玩具模型：$\\begin{bmatrix}2&1\\\\4&7\\end{bmatrix}=\\begin{bmatrix}1&0\\\\2&1\\end{bmatrix}\\begin{bmatrix}2&1\\\\0&5\\end{bmatrix}$ 是 LU；$\\begin{bmatrix}4&2\\\\2&3\\end{bmatrix}=\\begin{bmatrix}2&0\\\\1&\\sqrt{2}\\end{bmatrix}\\begin{bmatrix}2&1\\\\0&\\sqrt{2}\\end{bmatrix}$ 对应 Cholesky；而对角矩阵 $\\operatorname{diag}(3,1)$ 的奇异值就是 3 和 1。ML 里，LU 常见于线性系统求解，Cholesky 常见于协方差矩阵和高斯过程，SVD 常见于 PCA、低秩压缩和参数高效微调直觉。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "derivation",
+          "badge": "方法选择",
+          "labelTitle": "什么时候选哪一种",
+          "text": "如果矩阵只是一般可逆方阵，LU 是最通用的默认解法，因为三角系统前代和回代都便宜；如果矩阵还是对称正定，Cholesky 比 LU 更省一半左右工作量，也更稳；如果你关心的是矩阵的主方向、秩、压缩能力，而不是只求解一个线性系统，那么 SVD 最有解释力，因为它直接把能量按奇异值排序。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "SVD 最通用，但不代表工程里总该先上 SVD。很多时候你只是想解一个 SPD 线性系统，这时 Cholesky 更快、更省，也更接近生产代码的选择。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["分解", "前提", "最擅长的任务", "ML/DL 常见场景"],
+          "rows": [["LU", "一般方阵", "快速解线性系统", "最小二乘子问题、牛顿步"], ["Cholesky", "对称正定", "更稳更省地解系统", "协方差矩阵、高斯过程、二阶方法"], ["SVD", "任意矩阵", "看秩、压缩、主方向", "PCA、低秩近似、LoRA 直觉"]]
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从零写一个简单 LU 分解",
+          "content": "def lu_decompose_2x2(A):\n    a, b = A[0]\n    c, d = A[1]\n    l21 = c / a          # 先把第一列消掉，是为了把问题变成上三角回代\n    u11 = a\n    u12 = b\n    u22 = d - l21 * b    # 这里剩下的就是消元后的第二个主元\n    L = [[1.0, 0.0], [l21, 1.0]]\n    U = [[u11, u12], [0.0, u22]]\n    return L, U\n\nA = [[2.0, 1.0], [4.0, 7.0]]\nL, U = lu_decompose_2x2(A)\nprint('L =', L)\nprint('U =', U)"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：LU、Cholesky、SVD 分别在什么情况下用？\n\n答：LU 适合一般可逆方阵的线性系统求解，Cholesky 适合对称正定矩阵，速度和稳定性通常更好。SVD 最适合分析秩、主方向和低秩压缩，所以在 PCA 和模型压缩里最常见。"
+        }
+      ]
+    }
+  ]
+}

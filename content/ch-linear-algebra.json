@@ -1,0 +1,90 @@
+{
+  "id": "ch-linear-algebra",
+  "title": "线性代数",
+  "tag": "math",
+  "tagLabel": "数学基础",
+  "desc": "从矩阵乘法到 Jacobian，把线性代数和神经网络、降维、相似度、反向传播直接接起来。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "matrix-multiplication",
+      "title": "矩阵乘法与深度学习",
+      "subtitle": "为什么一层线性层本质上就是一次批量规则匹配？",
+      "icon": "🧱",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点", "text": "你把 2 个特征喂进神经网络，只想让模型同时看见'高点击率'和'高停留时长'，结果手写一堆 if-else 既扩不动也学不动。把'每个输出都看所有输入并做加权汇总'这件事写成 **矩阵乘法 (Matrix Multiplication)**，线性层、Embedding 查表后的投影、Attention 里的 QK 计算才都能批量跑起来。"},
+        {"type": "formula", "layer": 1, "content": "$$Y = XW + b$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "变量解释", "labelTitle": "其中", "text": "$X \\in \\mathbb{R}^{n \\times d_{in}}$ 是 $n$ 个样本的输入，$W \\in \\mathbb{R}^{d_{in} \\times d_{out}}$ 是权重矩阵，$b \\in \\mathbb{R}^{d_{out}}$ 是偏置，$Y \\in \\mathbb{R}^{n \\times d_{out}}$ 是输出。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "2 个样本手算一次", "text": "设 $X=\\begin{bmatrix}1 & 2\\\\3 & 1\\end{bmatrix}$，$W=\\begin{bmatrix}2 & -1\\\\1 & 3\\end{bmatrix}$。第一行输出是 $[1,2]W=[4,5]$，第二行输出是 $[3,1]W=[7,0]$。这说明每一行样本都在对所有输入特征做线性组合。ML 里线性回归、DL 里全连接层、Transformer 里的投影层，本质都是这套规则。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 如果不这样做会怎样", "content": "如果你只按元素相乘，特征之间永远不会混合，模型学不到'特征 A 和特征 B 一起出现才重要'这种交互。矩阵乘法的关键，不是把数字乘起来，而是让一组方向被重新组合。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么说神经网络的线性层就是矩阵乘法？\n\n答：因为每个输出维度都是输入向量和一列权重的点积，批量堆叠后就是 $XW$。这样模型能并行地对所有样本、所有输出维度做线性组合，这是深度学习高效实现的基础。"},
+        {"type": "code", "layer": 3, "title": "从零实现", "content": "def linear_layer(X, W, b):\n    out = []\n    for row in X:  # 每个样本单独算一遍，等价于批量矩阵乘法\n        new_row = []\n        for j in range(len(W[0])):  # 逐个输出维度取一列权重\n            s = 0\n            for i in range(len(row)):\n                s += row[i] * W[i][j]  # 点积，让输入特征发生线性混合\n            new_row.append(s + b[j])  # 最后再加偏置，给每个输出维度平移自由度\n        out.append(new_row)\n    return out"}
+      ]
+    },
+    {
+      "id": "eigenvalues-eigenvectors",
+      "title": "特征值与特征向量",
+      "subtitle": "为什么 PCA 和很多动力系统都在找'最稳定的方向'？",
+      "icon": "🧭",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点", "text": "你把二维用户行为点云丢给模型，发现一个方向变化特别大，另一个方向几乎没信息。想压缩维度时，最怕把真正有信号的方向扔掉。被矩阵变换后方向不变、只被拉伸或压缩的向量，叫做 **特征向量 (Eigenvector)**，对应拉伸倍数叫 **特征值 (Eigenvalue)**。PCA 就是在找方差最大的特征方向。"},
+        {"type": "formula", "layer": 1, "content": "$$A\\mathbf{v} = \\lambda \\mathbf{v}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "变量解释", "labelTitle": "其中", "text": "$A$ 是线性变换矩阵，$\\mathbf{v}$ 是特征向量，$\\lambda$ 是特征值。若 $|\\lambda|$ 大，这个方向被放大得更明显。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "看一个不会转向的方向", "text": "设 $A=\\begin{bmatrix}3 & 0\\\\0 & 1\\end{bmatrix}$。向量 $\\mathbf{v}_1=[1,0]^T$ 经过变换后变成 $[3,0]^T=3\\mathbf{v}_1$，方向不变，只有长度变成 3 倍，所以它是特征向量，特征值是 3。$\\mathbf{v}_2=[0,1]^T$ 也满足 $A\\mathbf{v}_2=1\\mathbf{v}_2$。PCA、协方差矩阵分析、图像主方向提取，都在找这种'信息最稳定的轴'。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "特征向量不是'任何被矩阵乘过的向量'。大多数向量会同时被旋转和拉伸，只有少数特殊方向会保持方向不变。也正因为它稀缺，才值得拿来做降维和系统分析。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：特征值和特征向量在机器学习里有什么实际意义？\n\n答：它们告诉我们线性变换最重要的方向和强度。PCA 对协方差矩阵做特征分解，本质上是在保留大特征值对应的主方向，从而用更少维度保留更多方差信息。"},
+        {"type": "code", "layer": 3, "title": "从零实现", "content": "def power_iteration(A, steps=8):\n    v = [1.0, 1.0]  # 随便给一个非零向量，反复乘 A 会逐渐对齐主特征向量\n    for _ in range(steps):\n        Av = [A[0][0]*v[0] + A[0][1]*v[1], A[1][0]*v[0] + A[1][1]*v[1]]\n        norm = (Av[0]**2 + Av[1]**2) ** 0.5\n        v = [Av[0]/norm, Av[1]/norm]  # 归一化，避免数值无限放大\n    Av = [A[0][0]*v[0] + A[0][1]*v[1], A[1][0]*v[0] + A[1][1]*v[1]]\n    eig = v[0]*Av[0] + v[1]*Av[1]  # Rayleigh quotient 近似主特征值\n    return v, eig"}
+      ]
+    },
+    {
+      "id": "svd",
+      "title": "奇异值分解 (SVD)",
+      "subtitle": "为什么推荐系统、压缩和 LoRA 都关心低秩结构？",
+      "icon": "🪚",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点", "text": "推荐系统的用户-物品矩阵通常又大又稀疏，直接存和直接学都太贵，但里面常常藏着少数几个主因子，比如'动作片偏好'、'价格敏感度'。把任意矩阵拆成旋转、拉伸、再旋转，就是 **奇异值分解 (SVD)**。它帮我们抓住低秩结构，所以压缩、去噪、潜在因子建模和 LoRA 都会反复用到它。"},
+        {"type": "formula", "layer": 1, "content": "$$A = U\\Sigma V^T$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "变量解释", "labelTitle": "其中", "text": "$U$ 和 $V$ 是正交矩阵，负责方向变换，$\\Sigma$ 是对角矩阵，对角线上的奇异值表示每个主方向的重要程度。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "看一个近似低秩矩阵", "text": "设评分矩阵 $A=\\begin{bmatrix}5 & 4\\\\4 & 5\\end{bmatrix}$。它的两行非常接近，说明两个用户偏好模式相似，矩阵接近低秩。若保留最大奇异值对应的主方向，就能用 1 个潜在因子近似重建大部分信息。ML 里这像 PCA 的矩阵版，DL 里 LoRA 则把更新写成低秩乘积 $\\Delta W=BA$，用更少参数逼近原始大矩阵更新。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 如果把小奇异值全当噪声", "content": "保留大奇异值通常能压缩，但不是所有小奇异值都该删。推荐系统的长尾偏好、异常检测里的微弱信号，有时正藏在次要方向里。面试里别把'截断 SVD'说成永远无损。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：SVD 为什么适合做降维和参数高效微调？\n\n答：因为它把矩阵拆成少数几个主方向及其强度，很多真实数据都近似低秩。保留前几个大奇异值就能用更低维表示保住主要信息，LoRA 也是利用这一点把大矩阵更新限制在低秩子空间。"},
+        {"type": "code", "layer": 3, "title": "从零理解低秩近似", "content": "def rank1_approx(u, sigma, v):\n    rows, cols = len(u), len(v)\n    out = []\n    for i in range(rows):\n        row = []\n        for j in range(cols):\n            row.append(u[i] * sigma * v[j])  # 只保留一个主方向，构造 rank-1 近似\n        out.append(row)\n    return out\n\n# 例：u=[1,1], sigma=4.5, v=[1,1] 近似表达'所有元素一起升高'的主模式"}
+      ]
+    },
+    {
+      "id": "vector-spaces-norms",
+      "title": "向量范数与相似度",
+      "subtitle": "为什么检索、Embedding 和正则化先问'多长'再问'多像'？",
+      "icon": "📐",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点", "text": "你做文本检索时，两个句子主题很像，但一个句子更长，点积竟然更大，模型把'长度'误当成'语义更相关'。把数据看成 **向量空间 (Vector Space)** 里的点后，先用 **范数 (Norm)** 衡量长度，再用 **余弦相似度 (Cosine Similarity)** 看方向，Embedding 检索、对比学习和正则化才不会混淆。"},
+        {"type": "formula", "layer": 1, "content": "$$\\|\\mathbf{x}\\|_2 = \\sqrt{\\sum_i x_i^2}, \\qquad \\cos(\\theta) = \\frac{\\mathbf{x} \\cdot \\mathbf{y}}{\\|\\mathbf{x}\\|_2\\|\\mathbf{y}\\|_2}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "变量解释", "labelTitle": "其中", "text": "$\\|\\mathbf{x}\\|_2$ 是向量长度，$\\mathbf{x} \\cdot \\mathbf{y}$ 是点积，$\\cos(\\theta)$ 衡量两个向量方向是否接近。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "同方向不等于同长度", "text": "设 $\\mathbf{x}=[3,4]$，$\\mathbf{y}=[6,8]$。它们的点积是 50，看起来很大，但这主要因为它们都很长。两者的 $L_2$ 范数分别是 5 和 10，余弦相似度是 $50/(5\\times10)=1$，说明它们方向完全一致。向量检索里常先归一化再搜邻居，正是为了强调语义方向而不是绝对长度。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "高点积不一定高相似。一个向量只要足够长，就能把点积抬高。只有当任务真的关心幅值，比如激活强弱或能量大小时，长度本身才是信号；否则往往要做归一化。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么向量检索经常用 cosine similarity 而不是直接用 dot product？\n\n答：因为 dot product 会把长度和方向混在一起，长向量可能被误判为更相关。cosine similarity 先除掉范数，只比较方向，更适合语义相似度和归一化后的 embedding 检索。"},
+        {"type": "code", "layer": 3, "title": "从零实现", "content": "def cosine_similarity(x, y):\n    dot = sum(a * b for a, b in zip(x, y))  # 先看是否同向\n    nx = sum(a * a for a in x) ** 0.5\n    ny = sum(b * b for b in y) ** 0.5\n    return dot / (nx * ny)  # 用范数消掉长度影响，只留下方向相似度\n\ndef l2_normalize(x):\n    n = sum(v * v for v in x) ** 0.5\n    return [v / n for v in x]"}
+      ]
+    },
+    {
+      "id": "gradients-jacobian",
+      "title": "梯度、Jacobian 与链式法则",
+      "subtitle": "为什么损失能一路倒着传回每个参数？",
+      "icon": "⛓️",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先看痛点", "text": "训练神经网络时，loss 明明只在输出端算出来，但你却要知道第 1 层每个参数该往哪改。这个'把最终误差倒着分账到每一步'的语言，就是 **梯度 (Gradient)**、**Jacobian** 和 **链式法则 (Chain Rule)**。没有它，反向传播只能靠瞎试。"},
+        {"type": "formula", "layer": 1, "content": "$$\\frac{\\partial L}{\\partial \\mathbf{x}} = \\frac{\\partial L}{\\partial \\mathbf{y}} \\cdot \\frac{\\partial \\mathbf{y}}{\\partial \\mathbf{x}}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "变量解释", "labelTitle": "其中", "text": "$L$ 是标量损失，$\\mathbf{x}$ 是输入向量，$\\mathbf{y}=f(\\mathbf{x})$ 是中间输出，$\\frac{\\partial \\mathbf{y}}{\\partial \\mathbf{x}}$ 是 Jacobian 矩阵。标量对向量求导得到梯度，向量对向量求导得到 Jacobian。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "2 维函数手算反传", "text": "设 $\\mathbf{y}=f(\\mathbf{x})=[2x_1+x_2, x_1-x_2]$，所以 Jacobian 是 $J=\\begin{bmatrix}2 & 1\\\\1 & -1\\end{bmatrix}$。若损失对输出的梯度是 $\\frac{\\partial L}{\\partial \\mathbf{y}}=[3,4]$，则对输入的梯度是 $[3,4]J=[10,-1]$。这表示 $x_1$ 增大一点会让 loss 涨得更快，$x_2$ 则方向相反。反向传播就是把每层的局部 Jacobian 连乘起来。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 如果链条太长会怎样", "content": "Jacobians 连乘时，若局部导数长期小于 1，梯度会衰减，形成梯度消失；若长期大于 1，梯度会爆炸。所以初始化、归一化、残差连接和梯度裁剪，本质都在管这条链的数值稳定性。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：梯度、Jacobian、链式法则在反向传播里各自扮演什么角色？\n\n答：梯度回答'某个变量往哪改能最快降 loss'，Jacobian 描述一层输入输出之间的局部线性映射，链式法则负责把这些局部映射串起来，把输出端的误差一路传回每个参数。"},
+        {"type": "code", "layer": 3, "title": "从零实现", "content": "def backward_example(dL_dy, J):\n    grad_x = []\n    for j in range(len(J[0])):  # 反传到每个输入维度，本质是向量乘 Jacobian\n        s = 0\n        for i in range(len(dL_dy)):\n            s += dL_dy[i] * J[i][j]  # 每条输出路径都要把自己的局部导数贡献回来\n        grad_x.append(s)\n    return grad_x\n\n# dL_dy=[3,4], J=[[2,1],[1,-1]] -> [10,-1]"}
+      ]
+    }
+  ]
+}

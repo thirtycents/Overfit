@@ -1,0 +1,252 @@
+{
+  "id": "ch-transformer",
+  "title": "Transformer & 注意力机制",
+  "tag": "llm",
+  "tagLabel": "🤖 大模型核心",
+  "desc": "先回答为什么需要 Transformer，再按直觉→公式→架构的顺序建立 Self-Attention 基础。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "seq-modeling-challenge",
+      "title": "为什么 Transformer 会出现",
+      "subtitle": "先看序列建模的旧痛点：长距离依赖 + 无法并行",
+      "icon": "🧭",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "WHY",
+          "labelTitle": "Transformer 要解决什么问题",
+          "text": "做机器翻译时，句首的词经常要依赖句尾的信息。RNN 的隐藏状态必须一个 token 一个 token 往后传，路径长、记忆衰减，还几乎不能并行；CNN 虽然能并行，但两个远距离 token 之间仍要跨很多层才能通信。**Transformer** 出现，就是为了同时解决**长距离依赖**和**训练并行性**这两个痛点。"
+        },
+        {
+          "type": "trap",
+          "layer": 1,
+          "title": "⚠️ 如果继续只用 RNN 会怎样",
+          "content": "句子越长，关键信息经过的链路越长，梯度越容易衰减；同时训练时第 t 个状态依赖第 t-1 个状态，GPU 很难把整句并行展开。模型不是完全学不会，而是学得慢、学得不稳、扩展到长序列很痛苦。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导直觉",
+          "labelTitle": "旧架构为什么吃亏",
+          "text": "RNN 的信息路径长度与序列距离近似成正比；两词隔 50 个位置，就要穿过约 50 次状态更新。Transformer 的 Self-Attention 让任意两个位置一次就能建立连接，因此最短路径从 $O(n)$ 压到 $O(1)$。这就是它擅长长距离依赖的根本原因。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\begin{aligned} h_t &= f(x_t, h_{t-1}) \\\\ \\text{RNN path length} &\\approx |i-j| = O(n) \\\\ \\text{Self-Attention path length} &= 1 = O(1) \\end{aligned}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["架构", "长距离依赖", "训练并行性", "典型问题"],
+          "rows": [
+            ["RNN / LSTM", "差", "差", "状态链过长"],
+            ["CNN", "中", "好", "远距离需跨多层"],
+            ["Transformer", "好", "好", "注意力开销随长度上升"]
+          ]
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么说 Transformer 先解决的是序列建模痛点，而不是先发明了一个公式？\n\n答：因为它首先针对的是 RNN 的两个工程瓶颈：长距离依赖路径太长，以及训练无法并行。Self-Attention 让任意位置一步交互，直接把信息路径缩到 $O(1)$，这才是 Transformer 成为主流的起点。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "为什么 RNN 难并行（示意代码）",
+          "content": "import torch\n\ndef rnn_scan(xs, h0, cell):\n    h = h0\n    outputs = []\n    for x_t in xs:\n        h = cell(x_t, h)  # 当前状态依赖上一时刻状态，所以整句必须顺序扫描\n        outputs.append(h)\n    return torch.stack(outputs)\n"
+        }
+      ]
+    },
+    {
+      "id": "transformer-overview",
+      "title": "Transformer 总览",
+      "subtitle": "先看整机结构，再进入注意力细节",
+      "icon": "🧱",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "全局地图",
+          "labelTitle": "一层 Transformer 在干什么",
+          "text": "把一句话编码成向量后，Transformer 每层都重复同一件事：先让每个 token 看全局上下文，再对每个位置各自做一次更强的非线性变换。前者叫 **Self-Attention**，后者叫 **FFN**；两者外面再套上 **残差连接** 和 **LayerNorm**，保证信息和梯度都能稳定流动。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\begin{aligned} X &\\rightarrow X + \\text{Position} \\\\ &\\rightarrow \\text{Attention block} \\\\ &\\rightarrow \\text{FFN block} \\\\ &\\rightarrow \\text{next layer} \\end{aligned}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "结构理解",
+          "labelTitle": "为什么是 Attention + FFN 的二段式",
+          "text": "Self-Attention 负责 token 与 token 之间的信息路由：当前词到底该看谁。FFN 负责 token 内部的特征重组：看完别人以后，当前词该如何更新自己的表示。没有 Attention，模型不会跨位置聚合信息；没有 FFN，模型只有加权平均，表达能力不够。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["组件", "核心作用", "如果拿掉会怎样"],
+          "rows": [
+            ["Position", "注入顺序", "词序被打乱也看不出来"],
+            ["Self-Attention", "跨 token 路由信息", "每个词只能看自己"],
+            ["FFN", "逐位置非线性变换", "表达力不足"],
+            ["Residual + Norm", "稳梯度稳训练", "深层难收敛"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 常见误解",
+          "content": "Transformer 不是只有 Attention。真正可训练、可堆深、可扩展的原因，是 Attention、FFN、残差连接、归一化一起工作。只背注意力公式，面试时通常答不完整。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：一层 Transformer 可以粗暴地分成哪两步？\n\n答：先用 Self-Attention 在 token 之间做信息路由，再用 FFN 在每个位置独立做非线性变换。外层再配 Residual 和 LayerNorm，保证深层训练稳定。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "Transformer block 骨架",
+          "content": "def transformer_block(x, attn, ffn):\n    x = x + attn(x)   # 先跨 token 聚合信息，再保留原输入走残差\n    x = x + ffn(x)    # 再逐位置变换特征，继续保留恒等路径\n    return x\n"
+        }
+      ]
+    },
+    {
+      "id": "attention-intuition",
+      "title": "Q / K / V 的直觉",
+      "subtitle": "先理解“怎么找相关信息”，再看数学公式",
+      "icon": "🔍",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "直觉先行",
+          "labelTitle": "Q、K、V 分别是什么",
+          "text": "当模型处理当前 token 时，它会先提出一个“我在找什么”的查询，这就是 **Query**；每个 token 再暴露一个“我身上有什么信息”的索引，这就是 **Key**；真正被取回并聚合的内容，是 **Value**。所以 Self-Attention 的本质不是背公式，而是：**让当前词按需去别的词那里取信息。**"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "为什么 Q 和 K 要分开",
+          "text": "句子“the animal didn't cross the road because it was tired”里，处理 `it` 时，Query 会偏向寻找“能表示疲倦的先行词”；`animal` 和 `road` 都会提供 Key，但只有 `animal` 的 Key 与这个 Query 更匹配。Q 决定你想找什么，K 决定我是否匹配你，V 决定一旦匹配后到底把什么内容送过去。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导直觉",
+          "labelTitle": "Self-Attention 的三步",
+          "text": "第一步，把同一份输入 $X$ 线性投影成 $Q,K,V$；第二步，用 $Q$ 和 $K$ 打分，得到“我该看谁”；第三步，用这些权重对 $V$ 做加权平均，得到新的上下文表示。这里最重要的不是矩阵形状，而是**打分只决定看谁，真正被搬运的是 Value**。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\begin{aligned} Q &= XW_Q, \\quad K = XW_K, \\quad V = XW_V \\\\ \\text{score}_{ij} &= q_i \\cdot k_j \\\\ \\text{output}_i &= \\sum_j \\alpha_{ij} v_j \\end{aligned}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["符号", "一句话角色", "不要混淆成什么"],
+          "rows": [
+            ["Q", "当前 token 的检索需求", "不是被传输的内容"],
+            ["K", "每个 token 的可匹配索引", "不是最终输出"],
+            ["V", "真正被聚合的信息", "不是相似度分数"]
+          ]
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 Attention 里要拆成 Q、K、V，而不是一个向量全做完？\n\n答：因为模型需要把“我在找什么”“我是否匹配你”“一旦匹配后传什么内容”这三件事解耦。Q/K 负责匹配，V 负责信息搬运，分开后表达能力更强。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从输入得到 QKV",
+          "content": "import torch\n\ndef project_qkv(x, w_q, w_k, w_v):\n    q = x @ w_q  # Query 负责描述当前 token 想检索什么\n    k = x @ w_k  # Key 负责暴露这个 token 是否值得被关注\n    v = x @ w_v  # Value 负责真正被加权汇总的内容\n    return q, k, v\n"
+        }
+      ]
+    },
+    {
+      "id": "scaled-dot-product",
+      "title": "Scaled Dot-Product Attention",
+      "subtitle": "公式放在直觉后面：为什么一定要除以 $\\sqrt{d_k}$",
+      "icon": "⚡",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心公式",
+          "labelTitle": "这一步到底在算什么",
+          "text": "有了 Q、K、V 之后，模型先用 Query 和所有 Key 计算相关性，再把这些相关性变成权重，最后对 Value 做加权求和。这一步叫 **Scaled Dot-Product Attention**。其中除以 $\\sqrt{d_k}$ 不是装饰，而是为了防止维度大时 softmax 过早饱和。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\operatorname{Attention}(Q,K,V)=\\operatorname{softmax}\\!\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "为什么缩放",
+          "labelTitle": "方差论证",
+          "text": "若 $q_i,k_i$ 独立且均值为 0、方差为 1，那么点积 $q\\cdot k=\\sum_{i=1}^{d_k} q_i k_i$ 的方差会随维度线性增长到 $d_k$。维度越大，logit 的幅度越大，softmax 越容易接近 one-hot，梯度就越接近 0。除以 $\\sqrt{d_k}$ 后，方差被重新压回 1，softmax 处在更健康的工作区间。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\begin{aligned} \\operatorname{Var}(q_i k_i) &= 1, \\qquad \\operatorname{Var}(q\\cdot k)=\\sum_{i=1}^{d_k} \\operatorname{Var}(q_i k_i)=d_k \\\\ \\operatorname{Var}\\!\\left(\\frac{q\\cdot k}{\\sqrt{d_k}}\\right) &= \\frac{d_k}{d_k}=1 \\end{aligned}$$"
+        },
+        {
+          "type": "interactive-formula",
+          "layer": 2,
+          "formula": "\\operatorname{Var}(q \\cdot k) = d_k",
+          "params": [
+            {
+              "name": "d_k",
+              "desc": "Key / Query 的单头维度，越大时不缩放越容易让 softmax 饱和",
+              "min": 8,
+              "max": 512,
+              "default": 64,
+              "step": 8
+            }
+          ],
+          "visualization": "variance-curve"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反事实：不除以 $\\sqrt{d_k}$ 会怎样",
+          "content": "当 $d_k=512$ 时，点积标准差约为 22.6。logit 很容易把 softmax 推到饱和区，注意力权重近似 one-hot，反向传播时大部分梯度几乎为 0。模型不是更“果断”，而是更难学。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 Transformer 用 Scaled Dot-Product，而不是直接点积？\n\n答：因为未缩放点积的方差与 $d_k$ 成正比，维度一大 softmax 就会饱和，导致梯度变差。除以 $\\sqrt{d_k}$ 能把方差稳定到 1，训练更稳定。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从零实现缩放注意力",
+          "content": "import math\nimport torch\n\ndef scaled_dot_product(q, k, v, mask=None):\n    d_k = q.size(-1)\n    scores = q @ k.transpose(-2, -1) / math.sqrt(d_k)  # 缩放是为了稳住 softmax 的输入方差\n    if mask is not None:\n        scores = scores.masked_fill(mask == 0, float('-inf'))  # 必须填 -inf 才能真正屏蔽\n    weights = torch.softmax(scores, dim=-1)\n    return weights @ v\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "id": "ch-evaluation",
+  "title": "模型评估与损失函数",
+  "tag": "ml",
+  "tagLabel": "机器学习",
+  "desc": "Precision/Recall/F1、ROC-AUC、交叉熵、Focal Loss、回归损失，覆盖分类评估、不平衡数据、多分类扩展等面试核心考点。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "precision-recall-f1",
+      "title": "Precision、Recall 与 F1",
+      "subtitle": "真题：Precision 和 Recall 如何权衡？F1 为什么是调和平均而非算术平均？",
+      "icon": "🎯",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "邮箱里有 100 封邮件，只有 1 封真垃圾邮件。模型如果把 100 封全判成正常，Accuracy 立刻是 99%，但这套系统根本没抓到风险。这个痛点逼我们引入 **Precision（精确率）**、**Recall（召回率）** 和 **F1**：前者看误报有多严重，后者看漏报有多严重，F1 强迫两边都不能太差。不这样做，你会被漂亮的 Accuracy 欺骗。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\text{Precision} = \\frac{TP}{TP+FP}, \\quad \\text{Recall} = \\frac{TP}{TP+FN}, \\quad F_1 = \\frac{2PR}{P+R}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "数字玩具模型",
+          "labelTitle": "100 封邮件，1 封垃圾邮件",
+          "text": "假设模型把 10 封邮件判成垃圾，其中 1 封真是垃圾，另外 9 封是正常邮件误杀。于是 $TP=1, FP=9, FN=0$，所以 $P=1/10=0.1$，$R=1/1=1.0$，而 $F_1=2\\times0.1\\times1.0/(1.1)\\approx0.18$。这说明模型虽然一个都没漏掉，但误报已经多到不可用。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "混淆矩阵怎么把痛点拆开",
+          "text": "把二分类结果拆成四格最容易看清问题：\n- **TP**：预测正，实际也正\n- **FP**：预测正，实际负，叫误报\n- **TN**：预测负，实际也负\n- **FN**：预测负，实际正，叫漏报\n\n继续看刚才的邮件例子，混淆矩阵是 $TP=1, FP=9, TN=90, FN=0$。Precision 只盯着你判成正的 10 封里有几封真危险，Recall 只盯着那 1 封真危险有没有被找到。这样一来，误报和漏报被明确分账，不会再被单一 Accuracy 混在一起。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["场景", "更重要的指标", "数字直觉"],
+          "rows": [
+            ["垃圾邮件过滤", "Precision", "10 封被拦下的邮件里有 9 封是正常邮件，用户一定会抱怨"],
+            ["癌症筛查", "Recall", "100 个病人漏掉 1 个都可能付出很大代价"],
+            ["风控初筛", "Recall", "宁可先多拉一些可疑单，也别把真欺诈放过"],
+            ["极不平衡数据", "F1 或 PR-AUC", "少数类太少时 Accuracy 基本没有信息量"]
+          ]
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "insight",
+          "badge": "扩展",
+          "labelTitle": "为什么 F1 用调和平均",
+          "text": "如果用算术平均，当 $P=0.1, R=1.0$ 时，$(P+R)/2=0.55$，看起来像个还能接受的模型。调和平均会得到 $0.18$，因为它会被较小值强力拉低。面试里可以直接说：**F1 的设计目标不是奖励偏科，而是惩罚偏科**。如果业务更怕漏报，可以再用 $F_\\beta = (1+\\beta^2)\\frac{PR}{\\beta^2P+R}$ 提高 Recall 权重。"
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：Precision 和 Recall 分别在什么场景下更重要？F1 为什么用调和平均？\n\n答：误报代价高时看 Precision，比如垃圾邮件过滤；漏报代价高时看 Recall，比如癌症筛查。F1 用调和平均，是因为它会被较小值强烈拉低，能防止模型靠一边极高、另一边极低来伪装成好模型。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从零实现",
+          "content": "import numpy as np\n\ndef precision_recall_f1(y_true, y_pred):\n    # 先把四格混淆矩阵数清楚，后面的指标都只是不同分母\n    tp = np.sum((y_pred == 1) & (y_true == 1))\n    fp = np.sum((y_pred == 1) & (y_true == 0))\n    fn = np.sum((y_pred == 0) & (y_true == 1))\n\n    precision = tp / (tp + fp + 1e-8)  # 防止模型一次正例都不报时除零\n    recall = tp / (tp + fn + 1e-8)     # 防止数据里没有正例时除零\n    f1 = 2 * precision * recall / (precision + recall + 1e-8)\n    return precision, recall, f1"
+        }
+      ]
+    },
+    {
+      "id": "roc-auc",
+      "title": "ROC 曲线与 AUC",
+      "subtitle": "真题：AUC 的概率解释是什么？为什么不平衡数据用 PR-AUC 而非 ROC-AUC？",
+      "icon": "📉",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "同一个欺诈检测器，阈值设成 0.85 时很保守，几乎不误报；阈值降到 0.30 时很激进，抓得多也吵得多。你不能只看某一个阈值点，因为上线策略会变。**ROC 曲线**就是把所有阈值下的 $TPR$ 和 $FPR$ 连起来，**AUC**则把这整条曲线压成一个排序能力分数。不这样做，你今天调阈值赢了，明天换阈值可能又输。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$TPR = \\frac{TP}{TP+FN}, \\quad FPR = \\frac{FP}{FP+TN}, \\quad AUC = P(\\hat{p}_{pos} > \\hat{p}_{neg})$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "5 个样本玩具模型",
+          "labelTitle": "保守阈值和激进阈值",
+          "text": "看 5 笔交易，真实标签是 $[1,1,0,0,0]$，模型分数是 $[0.90,0.55,0.80,0.40,0.20]$。阈值 $0.85$ 时，只有 0.90 被判欺诈，所以 $TPR=1/2=0.5, FPR=0/3=0$，这是保守策略。阈值 $0.50$ 时，0.90、0.80、0.55 都被判欺诈，于是 $TPR=2/2=1.0, FPR=1/3$。阈值越低，曲线就会一路向右上角移动。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "AUC 为什么等于排序正确概率",
+          "text": "还是用刚才 5 个样本。正例分数是 $\\{0.90, 0.55\\}$，负例分数是 $\\{0.80, 0.40, 0.20\\}$。一共会形成 $2\\times3=6$ 对正负样本：\n- $0.90$ 比三个负例都高，赢 3 次\n- $0.55$ 比 $0.40$、$0.20$ 高，但输给 $0.80$，赢 2 次\n\n所以 $AUC=5/6\\approx0.83$。这就是为什么 AUC 可以解释成：随机抽一个正例和一个负例，模型把正例排在前面的概率。它本质上在奖励排序，而不是奖励某一个固定阈值。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["指标", "适用场景", "容易误导的地方"],
+          "rows": [
+            ["ROC-AUC", "比较模型整体排序能力", "负例极多时，FPR 看起来会很低"],
+            ["PR-AUC", "关注少数类检出能力", "阈值变化时波动更敏感，但更真实"],
+            ["F1 @ 固定阈值", "已经确定业务阈值", "一旦阈值改掉，数值就得重算"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 为什么不平衡数据下 ROC-AUC 会显得过于乐观",
+          "content": "如果有 2 个欺诈样本和 3000 个正常样本，哪怕你误报了 30 个正常样本，$FPR=30/3000=0.01$ 仍然很小，ROC 曲线可能依旧很好看。但这 30 个误报在业务上可能已经把人工审核队列塞满了。此时 PR-AUC 更诚实，因为它直接问你：被你抓出来的可疑单里，到底有多少真的有问题。"
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：AUC 是什么？0.83 的 AUC 在直觉上怎么解释？为什么不平衡数据常看 PR-AUC？\n\n答：AUC 可以解释成随机抽一个正例和一个负例，模型把正例排得更靠前的概率，所以 0.83 就是大约 83% 的排序对是对的。不平衡数据下 ROC-AUC 容易被海量 TN 稀释，PR-AUC 不看 TN，更能反映少数类到底有没有被抓住。"
+        }
+      ]
+    },
+    {
+      "id": "cross-entropy-loss",
+      "title": "交叉熵损失函数",
+      "subtitle": "真题：交叉熵为什么适合分类？与 MSE 的区别？多分类如何推广？",
+      "icon": "📊",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你在做猫狗分类，真实标签是猫，但模型给猫的概率只有 0.01，反而给狗 0.99。这不是普通的错，而是**非常自信地错**。**交叉熵（Cross-Entropy）**就是专门惩罚这种错误的损失函数：越自信且越错，惩罚越大。不这样做，模型会把高置信度错判和低置信度错判混成一类，梯度信号不够尖锐。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\mathcal{L}_{CE} = -\\sum_{c=1}^{C} y_c \\log \\hat{p}_c \\xrightarrow{\\text{二分类}} -[y\\log\\hat{p} + (1-y)\\log(1-\\hat{p})]$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "数字玩具模型",
+          "labelTitle": "0.99 判对和 0.01 判错差多大",
+          "text": "如果正确类别概率是 $0.99$，损失是 $-\\log(0.99)\\approx0.010$，几乎等于奖励。可一旦正确类别概率只有 $0.01$，损失会变成 $-\\log(0.01)\\approx4.605$，立刻放大 460 多倍。交叉熵最想做的事很明确：**狠狠惩罚自信地犯错**。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "从 KL 散度到交叉熵",
+          "text": "真实标签分布记作 $P$，模型预测分布记作 $Q$。最小化两者差异，最自然的量是 $KL(P\\|Q)$：\n$$KL(P\\|Q) = \\sum_c p_c\\log\\frac{p_c}{q_c} = -\\sum_c p_c\\log q_c + \\sum_c p_c\\log p_c$$\n第二项只由真实标签决定，训练时是常数，所以最小化 KL 散度，等价于最小化第一项，也就是交叉熵。对于 one-hot 标签，只有正确类别那一项留下来，所以最终你优化的是正确类别的负对数概率。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "insight",
+          "badge": "对比",
+          "labelTitle": "为什么分类不用 MSE",
+          "text": "同样是真实标签 1，若模型输出 $\\hat{p}=0.01$，MSE 是 $(1-0.01)^2=0.9801$，看起来也不小，但它对 0.01 和 0.10 这类错误的区分没那么狠。更关键的是，sigmoid 配 MSE 时梯度会多乘一项 $\\sigma'(z)$，在饱和区接近 0；而 softmax 或 sigmoid 配交叉熵时，梯度能化简成 $\\hat{p}-y$，更新方向直接、力度也更稳定。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["损失函数", "适用任务", "为什么会被选中"],
+          "rows": [
+            ["Binary CE", "二分类", "直接优化正确类别概率"],
+            ["Categorical CE", "多分类单标签", "softmax 后梯度简洁，训练稳定"],
+            ["BCE with Logits", "多标签分类", "每个标签独立建模，不要求互斥"],
+            ["MSE", "回归", "对连续值误差自然，但不适合概率分类"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么分类任务更常用交叉熵而不是 MSE？\n\n答：交叉熵对应最大似然，直接优化正确类别的概率，所以概率解释天然成立。更重要的是它会对高置信度错判施加更大惩罚，且与 sigmoid 或 softmax 联用时梯度能化简成 $\\hat{p}-y$，训练通常比 MSE 更快更稳。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "从零实现（数值稳定版）",
+          "content": "import numpy as np\n\ndef softmax(z):\n    # 先减最大值，避免 exp 在大 logits 上直接溢出\n    z = z - np.max(z, axis=-1, keepdims=True)\n    exp_z = np.exp(z)\n    return exp_z / exp_z.sum(axis=-1, keepdims=True)\n\ndef cross_entropy_loss(logits, y_true):\n    # 交叉熵只关心正确类别被分到多少概率\n    probs = softmax(logits)\n    n = logits.shape[0]\n    correct_probs = probs[np.arange(n), y_true]\n    return -np.mean(np.log(correct_probs + 1e-8))\n\ndef cross_entropy_grad(logits, y_true):\n    # softmax 配交叉熵后，梯度会干净地化成 p_hat - y\n    probs = softmax(logits)\n    n = logits.shape[0]\n    probs[np.arange(n), y_true] -= 1\n    return probs / n"
+        }
+      ]
+    },
+    {
+      "id": "focal-loss-imbalance",
+      "title": "类别不平衡与 Focal Loss",
+      "subtitle": "真题：类别不平衡怎么处理？Focal Loss 为什么比 CE 更好？",
+      "icon": "⚖️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "目标检测里，一张图可能有 1000 个背景框，只含 2 个真目标。普通交叉熵会让这 1000 个简单负例一起发声，把那 2 个真正难的正例压到几乎听不见。**Focal Loss** 就是在交叉熵外面再乘一个聚焦因子，让已经判对的容易样本自动闭嘴，把梯度预算留给难样本。不这样做，模型很容易学成“背景分类器”。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\mathcal{L}_{FL} = -\\alpha_t (1-\\hat{p}_t)^\\gamma \\log(\\hat{p}_t)$$\n$$\\text{其中 } \\hat{p}_t = \\begin{cases} \\hat{p} & y=1 \\\\ 1-\\hat{p} & y=0 \\end{cases}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "数字玩具模型",
+          "labelTitle": "1000 个容易负例为什么会淹没 2 个难正例",
+          "text": "先把 $\\alpha_t=1$，只看聚焦效果。1000 个容易负例都预测得很好，$\\hat{p}_t=0.99$，单个交叉熵损失约为 $0.010$，总和大约是 $10.0$。2 个难正例只有 $\\hat{p}_t=0.30$，单个交叉熵约 $1.204$，总和约 $2.408$。也就是说，明明最该学的是那 2 个难正例，但 CE 的总损失却主要来自 1000 个已经学会的背景框。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "Focal Loss 怎么把注意力拉回难样本",
+          "text": "取常见的 $\\gamma=2$。对容易负例，调制因子是 $(1-0.99)^2=0.0001$，于是单个 Focal Loss 约变成 $0.000001$，1000 个加起来也只有约 $0.001$。对难正例，调制因子是 $(1-0.30)^2=0.49$，单个损失约是 $0.49\\times1.204\\approx0.59$，2 个加起来约 $1.18$。这时主导总损失的终于变成难正例，而不是海量背景。Focal Loss 的本质不是“加大正例权重”，而是“压低简单样本权重”。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方法", "修改阶段", "适用场景", "短板"],
+          "rows": [
+            ["过采样/欠采样", "数据层", "中度不平衡", "会改变原始数据分布"],
+            ["类别权重", "损失层", "类别数固定，比例已知", "手工权重常要反复调"],
+            ["Focal Loss", "损失层", "极端不平衡，检测任务", "多了 $\\gamma$ 这个超参数"],
+            ["阈值调整", "推断层", "不想重训模型", "不能改变训练时学到的特征"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉点",
+          "content": "很多人以为 Focal Loss 主要是在“奖励正例”。更准确的说法是，它主要在“让简单样本少说话”。如果数据只是 1:5 的轻度不平衡，类别权重或阈值调整常常已经够用，Focal Loss 不一定总是更好。"
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：Focal Loss 为什么比普通交叉熵更适合极端类别不平衡？\n\n答：因为交叉熵会把大量已经预测正确的简单负例也累计进总损失，梯度容易被它们主导。Focal Loss 乘上 $(1-\\hat{p}_t)^\\gamma$ 后，会把高置信度简单样本的权重大幅压低，让训练更聚焦在难正例和难负例上。"
+        }
+      ]
+    },
+    {
+      "id": "regression-losses",
+      "title": "回归损失函数：MSE、MAE、Huber",
+      "subtitle": "真题：MSE 和 MAE 分别在什么时候用？Huber Loss 解决了什么问题？",
+      "icon": "📐",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你在预测房价，3 套房子的误差分别是 1 万、2 万、20 万。前两套只是正常波动，最后一套可能是录入错了面积的离群点。**MSE**、**MAE**、**Huber Loss** 的差别，本质上就是遇到这种大误差时，你要不要让它劫持训练。不这样分清楚，模型很容易被少数脏样本牵着跑。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$L_{MSE} = \\frac{1}{n}\\sum (y-\\hat{y})^2, \\quad L_{MAE} = \\frac{1}{n}\\sum |y-\\hat{y}|$$\n$$L_{Huber} = \\begin{cases} \\frac{1}{2}(y-\\hat{y})^2 & |y-\\hat{y}| \\leq \\delta \\\\ \\delta |y-\\hat{y}| - \\frac{\\delta^2}{2} & |y-\\hat{y}| > \\delta \\end{cases}$$"
+        },
+        {
+          "type": "trap",
+          "layer": 1,
+          "title": "⚠️ 一个离群点就能把 MSE 拉爆",
+          "content": "继续用误差 $[1,2,20]$。MSE 是 $(1^2+2^2+20^2)/3=135$，其中那个 20 一个人就贡献了 400。MAE 是 $(1+2+20)/3\\approx7.67$，大误差仍然重要，但不会被平方放大。Huber 取 $\\delta=2$ 时，三个样本的损失分别是 $0.5, 2, 38$，平均约 $13.5$，它夹在两者中间。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "三种损失的梯度为什么性格不同",
+          "text": "记误差 $e=y-\\hat{y}$。MSE 的梯度是 $\\partial L/\\partial \\hat{y}=-e$，误差越大，梯度越大，所以它会强力追着离群点跑。MAE 的梯度是 $-\\text{sign}(e)$，永远只有 $\\pm1$，因此对离群点更鲁棒，但在 $e=0$ 处不光滑。Huber 则在小误差区沿用 MSE 的光滑二次型，在大误差区切到 MAE 的线性增长，所以兼顾了稳定优化和抗离群点能力。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["损失", "对离群点", "梯度特征", "适用场景"],
+          "rows": [
+            ["MSE", "最敏感", "误差越大，梯度越大", "噪声接近高斯，数据较干净"],
+            ["MAE", "最鲁棒", "梯度恒为常数，零点不光滑", "脏数据较多，中位数回归"],
+            ["Huber", "折中", "小误差像 MSE，大误差像 MAE", "默认回归基线常很稳"]
+          ]
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "insight",
+          "badge": "扩展",
+          "labelTitle": "怎么理解 Huber 的 $\\delta$",
+          "text": "$\\delta$ 就像一条警戒线。误差还在这条线内，说明样本大概率正常，继续用二次惩罚细抠精度。误差一旦超过这条线，就先别让它的梯度无限长大，切到线性惩罚更稳。$\\delta$ 越小，Huber 越像 MAE；$\\delta$ 越大，越像 MSE。"
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：什么时候你会优先选 MAE 或 Huber，而不是 MSE？\n\n答：当数据里有明显离群点，或者标签噪声不可忽略时，我会避免直接用 MSE，因为它会被大误差平方放大。MAE 最鲁棒，但优化不够光滑；Huber 常是更实用的折中方案，小误差保留 MSE 的精细优化，大误差切到 MAE 的有界梯度。"
+        }
+      ]
+    }
+  ]
+}

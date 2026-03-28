@@ -1,0 +1,321 @@
+{
+  "id": "ch-transformer-advanced",
+  "title": "Transformer 进阶：长上下文 & 高效训练",
+  "tag": "llm",
+  "tagLabel": "大模型核心",
+  "desc": "聚焦长上下文与工程高频考点：为什么全注意力扛不住、FlashAttention 如何在不近似的前提下降显存、GQA/MQA/MLA 如何压 KV Cache、训练时如何继续省显存。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "long-context-bottleneck",
+      "title": "长上下文为什么先卡死在注意力矩阵",
+      "subtitle": "真题：为什么 full attention 到 100K token 就贵得离谱？",
+      "icon": "🧱",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "痛点先行",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "你让模型读一份 100K token 的合同，不是参数先爆，而是每个 token 都要和另外 99999 个 token 算相关性，立刻生成一个 100000×100000 的分数表。这个『不是模型不会想，而是显存先撑不住』的问题，叫做长上下文里的**二次复杂度瓶颈**；围绕它发展出的做法，主要有**稀疏注意力 (Sparse Attention)** 和各种更省 IO 的精确实现。不处理这个瓶颈，长上下文就会先败在显存和带宽，而不是败在建模能力。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\text{Memory}_{\\text{scores}} \\propto n^2, \\qquad \\text{FLOPs}_{\\text{attn}} \\propto n^2 d$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "example",
+          "badge": "玩具模型",
+          "labelTitle": "用具体数字感受为什么可怕",
+          "text": "其中：$n$ 是序列长度，$d$ 是每个 head 的隐藏维度。假设只有 1 个 head、每个分数用 2 byte 存。$n=4096$ 时，分数矩阵约有 $1.68\\times10^7$ 个元素，约 32MB；$n=32768$ 时变成约 10 亿个元素，单 head 就接近 2GB。当 $n$ 从 $4K$ 增长到 $128K$ 时，矩阵规模会按 $\\left(\\frac{128K}{4K}\\right)^2=1024$ 倍放大。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导过程",
+          "labelTitle": "为什么复杂度一定是平方级",
+          "text": "对每个 query，都要和全部 key 做一次点积，所以每行有 $n$ 次比较，总共有 $n$ 行，于是先得到 $n^2$ 个分数。再对这 $n^2$ 个分数做 softmax 和加权求和，计算与访存都绕不开这张大表。你可以把它想成班里每个人都要和每个人互相打分：人数翻 2 倍，评分对数不是翻 2 倍，而是接近翻 4 倍。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "很多人以为长上下文首先是『算力不够』，其实在现代 GPU 上更常见的第一堵墙是 HBM 带宽和中间矩阵显存。也就是说，瓶颈经常不是数学公式太复杂，而是数据在显存和 SRAM 之间搬得太多。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方案", "核心思路", "复杂度直觉", "代价"],
+          "rows": [
+            ["Full Attention", "每个 token 看全部位置", "O(n^2)", "最准确，但最贵"],
+            ["Sparse Attention", "每个 token 只看局部/随机/全局少量位置", "O(nk)", "省显存，但引入近似或归纳偏置"],
+            ["FlashAttention", "仍算精确 attention，但分块减少 IO", "算子仍是 O(n^2)", "不近似，但实现更硬核"]
+          ]
+        },
+        {
+          "type": "kitem",
+          "layer": 3,
+          "labelType": "interview",
+          "badge": "面试视角",
+          "labelTitle": "面试官常怎么追问",
+          "text": "高频问法是：『长上下文困难到底难在参数、算力还是显存？』标准回答要点是：训练和推理都会受二次注意力约束，但很多工程场景里，最先炸的是 KV / score 的存储与 IO，而不是乘法本身。进一步追问时，可以补一句：现代系统常用 FlashAttention、PagedAttention、GQA 配合位置编码扩展，而不是单纯靠稀疏近似。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 full attention 在长上下文里是 O(n^2)？\n\n答：因为每个 query 都要和全部 $n$ 个 key 计算相似度，一共有 $n$ 个 query，所以分数矩阵天然是 $n\\times n$。长度翻倍时，attention score 的存储和大部分相关计算都会近似放大 4 倍。"
+        }
+      ]
+    },
+    {
+      "id": "flash-attention",
+      "title": "FlashAttention：不近似注意力，也能把显存压下去",
+      "subtitle": "真题：FlashAttention 为什么说自己是 exact attention？",
+      "icon": "⚡",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "痛点先行",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "如果你已经接受 full attention 的数学定义没问题，但 GPU 一直在为那张巨大分数矩阵来回搬运数据，那么真正该优化的不是公式，而是 IO。**FlashAttention** 的核心想法就是：按块读取 $Q,K,V$，在 SRAM 里边算边归一化边累计输出，不把完整 $n\\times n$ 分数矩阵落到 HBM。它解决的是『精确 attention 太吃显存带宽』的问题，而不是把 attention 近似掉。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$O_i = \\sum_j \\frac{\\exp(s_{ij})}{\\sum_k \\exp(s_{ik})} V_j, \\qquad s_{ij}=\\frac{Q_iK_j^T}{\\sqrt{d_k}}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "日期敏感",
+          "labelTitle": "为什么它和稀疏注意力不是一回事",
+          "text": "其中：$s_{ij}$ 是第 $i$ 个 query 与第 $j$ 个 key 的打分，$O_i$ 是第 $i$ 个 token 的输出。Sparse Attention 是让 token 少看一些位置；FlashAttention 是让 token 仍然看全部位置，但不要把中间大表完整存下来。FlashAttention 首版发表于 2022（截至 2024-Q1 仍是主流精确 attention 内核之一），所以它更像『工程实现革命』而不是『建模假设革命』。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导过程",
+          "labelTitle": "分块 softmax 为什么还能算得对",
+          "text": "关键在于 softmax 可以做在线归一化。假设某一行先看前半块分数，得到当前最大值 $m^{(1)}$ 和分母和 $l^{(1)}$；再看后半块时，不需要回头保存全部旧分数，只要把旧统计量按新的最大值重标定，再与新块统计量合并。这样每一行都能边扫块边维护『当前最大值 + 当前归一化和 + 当前输出累加』，最后得到的结果与一次性算完整 softmax 完全一致。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$m^{(t)} = \\max\\left(m^{(t-1)}, \\max S^{(t)}\\right), \\qquad l^{(t)} = e^{m^{(t-1)}-m^{(t)}} l^{(t-1)} + \\sum_{j \\in \\text{block } t} e^{s_j-m^{(t)}}$$"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "其中：$m^{(t)}$ 是处理到第 $t$ 个 block 后的行最大值，$l^{(t)}$ 是对应的 softmax 分母累计值。FlashAttention 没把二次复杂度从数学上消掉；它真正压下去的是中间矩阵落地和重复访存，所以很多资料说它把显存从 O(n^2) 降到近似 O(n)，指的是额外中间存储。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["问题", "普通实现", "FlashAttention 实现"],
+          "rows": [
+            ["是否计算完整 attention", "是", "是"],
+            ["是否存完整 score 矩阵", "通常要存", "按块处理，不完整落地"],
+            ["主要收益", "实现直接但 IO 大", "显存占用和带宽压力显著下降"]
+          ]
+        },
+        {
+          "type": "kitem",
+          "layer": 3,
+          "labelType": "interview",
+          "badge": "面试视角",
+          "labelTitle": "一句话区分 FlashAttention 和 Sparse Attention",
+          "text": "你可以直接说：Sparse Attention 改的是『谁和谁连边』，FlashAttention 改的是『这些边怎么在 GPU 上高效算出来』。如果面试官继续追问 exact 的含义，就强调它对同样的 $Q,K,V$ 和 mask，输出与标准 attention 数学上等价。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "在线 softmax 的核心骨架（教学版）",
+          "content": "import torch\n\ndef online_softmax_row(scores, values, block_size=2):\n    m = torch.tensor(float('-inf'))  # 记录目前见过的最大值，避免指数爆炸\n    l = torch.tensor(0.0)            # 记录归一化分母，保证最后概率和为 1\n    out = torch.zeros_like(values[0])  # 边扫描边累加输出，避免存完整注意力矩阵\n\n    for start in range(0, scores.size(0), block_size):\n        block_scores = scores[start:start + block_size]  # 只取一个小块，模拟 SRAM 分块计算\n        block_values = values[start:start + block_size]\n        block_max = block_scores.max()\n        new_m = torch.maximum(m, block_max)  # 新块可能刷新全局最大值，所以先更新标尺\n\n        old_scale = torch.exp(m - new_m) if torch.isfinite(m) else torch.tensor(0.0)\n        block_exp = torch.exp(block_scores - new_m)  # 所有指数都相对 new_m 计算，保持数值稳定\n        l = old_scale * l + block_exp.sum()          # 合并旧分母和新分母\n        out = old_scale * out + (block_exp.unsqueeze(-1) * block_values).sum(dim=0)\n        m = new_m\n\n    return out / l  # 最后再做一次归一化，得到与标准 softmax 相同的输出"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：FlashAttention 为什么是 exact attention，而不是近似方法？\n\n答：因为它没有改变 attention 的数学目标，仍然对全部 key 做标准 softmax 加权求和。它只是通过分块与在线 softmax 避免完整落地 $n\\times n$ 分数矩阵，所以省的是 IO 和中间显存，不是把注意力近似掉。"
+        }
+      ]
+    },
+    {
+      "id": "gqa-mqa-mla",
+      "title": "GQA / MQA / MLA：为什么大家都在省 KV Cache",
+      "subtitle": "真题：LLaMA 为什么用 GQA，而不是每个头都保留独立 K、V？",
+      "icon": "🗂️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "痛点先行",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "推理时最烦人的不是参数一次性装不下，而是回答越长，历史 token 的 K、V 越攒越多。**Multi-Query Attention (MQA)**、**Grouped-Query Attention (GQA)**，以及更激进的 **MLA**，本质上都在解决『KV Cache 太胖，导致显存占用和带宽压力持续增长』。如果不减 KV 的冗余，多用户并发和超长上下文都会先把推理吞吐拖死。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\text{KV Cache Size} \\propto L \\cdot n \\cdot h_{kv} \\cdot d_{head}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "example",
+          "badge": "玩具模型",
+          "labelTitle": "3 种设计的直觉区别",
+          "text": "其中：$L$ 是层数，$n$ 是已生成 token 数，$h_{kv}$ 是真正需要存储的 KV 头数，$d_{head}$ 是每个头的维度。减少 $h_{kv}$，KV Cache 就按比例下降。假设有 8 个 query 头：MHA 给 8 个头各存一套 K、V；MQA 让 8 个头共用 1 套；GQA 则让 8 个头分成 2 组，每组共用 1 套。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "推导过程",
+          "labelTitle": "为什么 GQA 成了工程折中点",
+          "text": "假设原本是 32 个 attention 头。如果仍然使用标准 MHA，就要存 32 份 K、V；如果改成 MQA，只存 1 份，KV Cache 理论上直接缩到 1/32，但头之间共享过强，质量风险更高。GQA 例如设成 8 个 KV 头，则 32 个 query 头按 4:1 映射到 KV 头，KV Cache 约降到原来的 1/4，同时仍保留一定的多样性。这也是很多现代 LLM 在质量和吞吐之间的现实平衡点。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方案", "KV 头数", "KV Cache", "质量风险", "典型理解"],
+          "rows": [
+            ["MHA", "与 query 头数相同", "最大", "最低", "每个头都独立存 K、V"],
+            ["MQA", "1", "最小", "最高", "所有 query 头共用同一套 K、V"],
+            ["GQA", "1 到 h 之间", "中等", "中等", "按组共享 K、V"],
+            ["MLA", "进一步做低秩/潜空间压缩", "更小", "实现更复杂", "把 cache 再压缩一层"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "很多人以为只要参数量不变，注意力头怎么共享都无所谓。实际上推理质量经常对 KV 表达能力非常敏感，所以工程上不是『越省越好』，而是『省到吞吐明显提升，但别把不同头的表达压扁』。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "日期敏感",
+          "labelTitle": "面试里怎么讲时效性",
+          "text": "截至 2024-Q1，GQA 已经是很多主流开源大模型的常见配置，因为它直接缓解推理时的 KV Cache 压力。MLA 则更偏新一代高压缩设计，回答时可以把它描述为『进一步压缩 KV 表示的方向』，但不要把不同论文实现细节混成同一种算法。"
+        },
+        {
+          "type": "kitem",
+          "layer": 3,
+          "labelType": "interview",
+          "badge": "面试视角",
+          "labelTitle": "最安全的回答结构",
+          "text": "先说明目标：省 KV Cache。再说三者关系：MHA 完全独立、MQA 完全共享、GQA 组内共享。最后给工程结论：现代 LLM 经常用 GQA，因为它比 MHA 省显存、比 MQA 更稳，适合长上下文和高并发推理。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么很多现代 LLM 用 GQA，而不是继续用标准多头注意力？\n\n答：因为推理时 KV Cache 大小与 KV 头数近似成正比，标准 MHA 会把每个头的 K、V 全部独立存下来，显存和带宽压力很大。GQA 通过让多个 query 头共享一组 K、V，在质量损失相对可控的前提下显著压缩 KV Cache，所以是更好的工程折中。"
+        }
+      ]
+    },
+    {
+      "id": "training-memory-tricks",
+      "title": "训练显存怎么省：Checkpointing、bf16、ZeRO",
+      "subtitle": "真题：训练大模型时，为什么大家老说用时间换显存？",
+      "icon": "🏋️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "context",
+          "badge": "痛点先行",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "训练 Transformer 时，你不仅要放下参数，还要存优化器状态和中间激活。很多新手以为『模型 7B，bf16 只有 14GB』就能训，结果一开 Adam 和长序列立刻炸。**Gradient Checkpointing**、**bf16**、**ZeRO** 都是在回答同一个问题：训练时怎么让显存别被参数副本、激活值和优化器状态一起拖垮。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\text{Training Memory} \\approx \\text{Parameters} + \\text{Optimizer States} + \\text{Gradients} + \\text{Activations}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "example",
+          "badge": "玩具模型",
+          "labelTitle": "为什么 7B 不等于 14GB 就能训练",
+          "text": "其中：参数和梯度通常按模型规模增长，激活值会随着 batch size 与序列长度显著上升，优化器状态在 Adam 下往往比直觉更贵。如果参数是 7B，bf16 参数本体约 14GB；再加梯度又是一份；Adam 还要额外维护一阶矩和二阶矩。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "Gradient Checkpointing",
+          "labelTitle": "为什么它叫用时间换显存",
+          "text": "正常反向传播会把前向的激活值都缓存起来，因为反向要用。Checkpointing 只保存少数检查点，反向时再把中间那段前向重算一遍，于是激活显存下降，但算力成本上升。你可以把它理解成：不把全过程录像都存下来，只记几个关键帧，回放时再补中间镜头。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\text{Activation Memory: } O(L) \\rightarrow O(\\sqrt{L}) \\text{（最优 checkpoint 间隔的经典结论）}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["技术", "省什么", "代价", "一句话理解"],
+          "rows": [
+            ["Gradient Checkpointing", "激活显存", "反向更慢", "少存中间结果，多做一次重算"],
+            ["bf16", "参数/激活字节数", "尾数更短", "保留大动态范围，减少溢出麻烦"],
+            ["ZeRO", "多卡重复状态", "通信更重", "把优化器/梯度/参数切到不同 GPU 上"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "很多人把 bf16 当成『更高效的 fp16』。更准确的说法是：bf16 的关键收益不是更精确，而是指数位和 fp32 一样大，所以更不容易数值溢出；它省的是存储字节，同时保住了训练稳定性。"
+        },
+        {
+          "type": "kitem",
+          "layer": 3,
+          "labelType": "interview",
+          "badge": "面试视角",
+          "labelTitle": "怎么回答训练显存优化组合拳",
+          "text": "一个完整回答通常是：单卡先用 bf16 降字节和减数值风险，再用 checkpointing 压激活显存；多卡训练时再叠加 ZeRO，把重复的优化器状态、梯度甚至参数切开。这样回答既有机制层次，也体现工程优先级。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "PyTorch 中最常见的 checkpoint 用法",
+          "content": "import torch\nfrom torch.utils.checkpoint import checkpoint\n\ndef block(x, w1, w2):\n    h = x @ w1            # 前向里先做一次线性变换，产生中间激活\n    h = torch.relu(h)     # 非线性会让这份激活在反向中必须被再次访问\n    return h @ w2         # 返回 block 输出，供后续层继续使用\n\ndef forward_with_checkpoint(x, w1, w2):\n    return checkpoint(block, x, w1, w2)  # 不保存完整中间激活，反向时自动重算这一段"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：Gradient Checkpointing 为什么常被说成用时间换显存？\n\n答：因为它不再缓存全部前向激活，而是在反向传播时把需要的中间结果重新前向计算出来。这样显存压力下降，但每次训练 step 的计算量会上升，所以本质上是在牺牲时间换取更低显存占用。"
+        }
+      ]
+    }
+  ]
+}

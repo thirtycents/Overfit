@@ -1,0 +1,289 @@
+{
+  "id": "ch-optimization",
+  "title": "优化方法",
+  "tag": "ml",
+  "tagLabel": "机器学习",
+  "desc": "SGD、Momentum、Adam、学习率调度、梯度消失/爆炸与正则化，覆盖训练稳定性与收敛效率的核心面试考点。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "sgd-momentum",
+      "title": "SGD 与 Momentum",
+      "subtitle": "真题：Mini-batch SGD 和全批量梯度下降的区别？Momentum 解决了什么问题？",
+      "icon": "⛰️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "想象参数正在一条狭长山谷里找最低点。横向梯度一会儿是 $+10$，一会儿是 $-10$，纵向梯度却一直是 $+1$。这时全批量 **GD** 每步都很准，但太慢。**Mini-batch SGD** 每步只看一小批样本，方向带噪声，却能更快更新。真正的麻烦是：纯 SGD 在横向会左右来回弹，沿谷底前进很慢。**Momentum** 就是为这个失败模式准备的，它把历史梯度做指数平均，让反复震荡的方向互相抵消，让长期一致的方向越走越快。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$v_t = \\beta v_{t-1} + (1-\\beta)\\nabla_\\theta \\mathcal{L}, \\quad \\theta_t = \\theta_{t-1} - \\eta v_t$$\n$$\\text{其中 } \\beta \\approx 0.9 \\text{ 是动量系数，} \\eta \\text{ 是学习率}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "玩具模型",
+          "labelTitle": "四步轨迹对比",
+          "text": "用一个 2D toy model 看差别。设四步横向梯度依次为 $[10,-10,10,-10]$，纵向梯度始终为 $1$。纯 SGD 若取 $\\eta=0.1$，横向位置会在 $0 \\to -1 \\to 0 \\to -1 \\to 0$ 之间来回跳，纵向只从 $10$ 慢慢降到 $9.6$。Momentum 取 $\\beta=0.9$ 时，横向速度序列变成 $1,-0.1,0.91,-0.181$，来回震荡明显被削弱；纵向速度则是 $0.1,0.19,0.271,0.344$，说明一致方向会不断累积，这就是“惯性”。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "Mini-batch 为什么是实践默认值",
+          "text": "全批量 GD 每次都扫描全数据集，方向最稳定，但一次更新太贵。Mini-batch SGD 用 256 或 1024 个样本近似全局梯度，单步便宜得多，还能吃满 GPU。噪声不是纯缺点，它常常能把参数从鞍点或尖锐极小值附近晃出来。经验上 batch 太小，梯度方差大到难以收敛；batch 太大，更新虽然平滑，却更容易落到泛化差的尖锐极小值。实践里常把 **SGD + Momentum + LR Schedule** 当作视觉任务的标准底座，而 Nesterov Momentum 则是在动量基础上先“向前看”一步：\n$$v_t = \\beta v_{t-1} + \\nabla_\\theta \\mathcal{L}(\\theta - \\beta \\eta v_{t-1})$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["优化器", "自适应学习率", "动量", "典型印象"],
+          "rows": [
+            ["SGD", "❌", "❌", "更新朴素，调好后泛化常很好"],
+            ["SGD + Momentum", "❌", "✅", "狭长山谷里更稳更快"],
+            ["Adam", "✅", "✅", "参数级自适应，收敛快"],
+            ["AdamW", "✅", "✅", "Transformer 训练标准配置"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么用 Mini-batch SGD 而不是全批量梯度下降？Momentum 的作用是什么？\n\n答：Mini-batch SGD 用小批量近似全局梯度，单步便宜得多，还能利用梯度噪声跳出鞍点和尖锐极小值。Momentum 解决的是纯 SGD 在狭长山谷里横向来回震荡、纵向推进过慢的问题，本质是对历史梯度做指数平均，让震荡方向抵消，一致方向累积。"
+        }
+      ]
+    },
+    {
+      "id": "adam-adamw",
+      "title": "Adam 与 AdamW",
+      "subtitle": "真题：Adam 为什么比 SGD 收敛快？AdamW 修复了什么 bug？偏差修正是什么？",
+      "icon": "⚡",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "训练 embedding 或超大模型时，最常见的失败模式之一是：有些参数每步梯度都很大，有些参数十几步才被命中一次。若所有参数共用同一个学习率，前者容易步子太大来回抖，后者又几乎学不动。**Adam** 用一阶矩保存方向，用二阶矩保存每个参数历史梯度的尺度，于是能做 **parameter-wise adaptation**。结果是，频繁更新的参数自动降速，稀疏更新的参数自动提速。**AdamW** 则进一步修复 Adam 中权重衰减被自适应分母扭曲的问题。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$m_t = \\beta_1 m_{t-1} + (1-\\beta_1)g_t, \\quad v_t = \\beta_2 v_{t-1} + (1-\\beta_2)g_t^2$$\n$$\\hat{m}_t = \\frac{m_t}{1-\\beta_1^t}, \\quad \\hat{v}_t = \\frac{v_t}{1-\\beta_2^t}$$\n$$\\theta_t = \\theta_{t-1} - \\frac{\\eta}{\\sqrt{\\hat{v}_t}+\\epsilon}\\hat{m}_t \\quad (\\text{Adam})$$\n$$\\theta_t = \\theta_{t-1} - \\frac{\\eta}{\\sqrt{\\hat{v}_t}+\\epsilon}\\hat{m}_t - \\eta\\lambda\\theta_{t-1} \\quad (\\text{AdamW})$$"
+        },
+        {
+          "type": "trap",
+          "layer": 1,
+          "title": "⚠️ 为什么需要偏差修正",
+          "content": "初始化时 $m_0=v_0=0$。若第一步梯度 $g_1=2$，且 $\\beta_1=0.9$，那么 $m_1=0.2$，只有真实梯度的 10%。偏差修正后 $\\hat m_1 = 0.2 / (1-0.9) = 2$，才把早期统计量拉回正确量级。没有偏差修正，Adam 训练开头会被“假装很小”的一阶矩拖慢。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么 Adam 对稀疏参数友好",
+          "text": "看两个参数。参数 A 每步都被更新，当前梯度约为 $2$。参数 B 很稀疏，只有某个 token 出现时才更新，梯度约为 $0.02$。若全局学习率都取 $10^{-3}$，SGD 的步长分别是 $2\\times10^{-3}$ 和 $2\\times10^{-5}$，相差 100 倍，B 基本学不动。Adam 稳定后可近似看成 $\\Delta\\theta \\approx \\eta g / \\sqrt{g^2}$，于是 A 的有效步长约为 $10^{-3}\\cdot2/2=10^{-3}$，B 也是 $10^{-3}\\cdot0.02/0.02=10^{-3}$。这就是自适应学习率的直觉。\n\n再看 AdamW 修复了什么。设两个参数当前权重都为 $10$，L2 项给出的附加梯度都是 $\\lambda\\theta=0.1$。如果它们对应的自适应分母分别是 $2$ 和 $0.2$，Adam 中正则化实际带来的更新变成 $5\\times10^{-5}$ 与 $5\\times10^{-4}$，同样大小的权重被惩罚了 10 倍不同。AdamW 直接做 $\\eta\\lambda\\theta = 10^{-4}$ 的解耦衰减，两个参数受到同样的 weight decay。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["超参数", "常见值", "作用"],
+          "rows": [
+            ["η", "1e-3 ~ 3e-4", "全局学习率基准"],
+            ["β₁", "0.9", "控制一阶矩记忆长度"],
+            ["β₂", "0.999", "控制二阶矩平滑程度"],
+            ["ε", "1e-8", "防除零，也影响极小梯度区"],
+            ["λ", "0.01 ~ 0.1", "AdamW 的 weight decay 强度"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：Adam 为什么比 SGD 收敛快？AdamW 和 Adam 的区别是什么？\n\n答：Adam 维护每个参数自己的有效学习率，梯度大的参数会自动降速，梯度稀疏或很小的参数会自动提速，所以在 embedding、NLP、LLM 里收敛通常更快。AdamW 的关键区别是把 weight decay 从自适应梯度更新里解耦，避免不同参数因分母不同而受到不一致的正则化强度。"
+        }
+      ]
+    },
+    {
+      "id": "lr-schedule",
+      "title": "学习率调度",
+      "subtitle": "真题：为什么要 Warmup？Cosine Annealing 和 Step Decay 怎么选？",
+      "icon": "📈",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "固定学习率最常见的两种翻车方式是：学习率太大，loss 从 3.0 直接冲到 8.0 甚至 NaN；学习率太小，loss 从 3.0 只降到 2.98，像爬行。**LR Schedule** 要解决的就是这对矛盾。训练刚开始时参数还很乱，步子不能太大。接近最优点后又需要更小步长细调，否则会一直在谷底附近来回越界。**Warmup** 负责把起步阶段变稳，**Cosine Decay** 负责把收尾阶段变细。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\eta_t^{\\text{warmup}} = \\eta_{\\max} \\cdot \\frac{t}{T_{\\text{warm}}} \\quad (t \\le T_{\\text{warm}})$$\n$$\\eta_t^{\\text{cosine}} = \\eta_{\\min} + \\frac{1}{2}(\\eta_{\\max}-\\eta_{\\min})\\left(1 + \\cos\\frac{\\pi(t-T_{\\text{warm}})}{T_{\\text{total}}-T_{\\text{warm}}}\\right)$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "insight",
+          "badge": "玩具模型",
+          "labelTitle": "一个一维二次函数就够了",
+          "text": "令损失是 $f(w)=(w-5)^2$，起点 $w_0=0$，梯度是 $2(w-5)$。若学习率取 $1.2$，则 $w_1=12$，下一步又会跳到 $-4.8$，loss 从 $25$ 变成 $49$ 再变成 $96.04$，明显发散。若学习率取 $0.05$，则 $w_1=0.5,w_2=0.95$，loss 只从 $25$ 降到 $20.25$ 再到 $16.40$，太慢。Warmup + Decay 的直觉就是，先别一脚油门踩满，再在快到谷底时主动收油。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么 Transformer 标配 Warmup + Cosine",
+          "text": "Warmup 常被设为总步数的 1% 到 5%。例如总训练 100000 步，峰值学习率是 $2\\times10^{-4}$，若 warmup 取 4000 步，那么前四个等分点的学习率依次是 $5\\times10^{-5}$、$10^{-4}$、$1.5\\times10^{-4}$、$2\\times10^{-4}$。这样做的原因不是“慢一点更安全”这么简单，而是 Adam 早期的一阶矩和二阶矩统计都还没稳定，直接把峰值学习率灌进去，容易出现 loss spike。后续用 cosine 从峰值平滑降到接近零，比 Step Decay 更少出现折点式震荡。Step Decay 的优点是简单、好解释，Cosine 的优点是训练曲线更平滑，特别适合长程训练。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["Schedule", "适用场景", "优点", "代价"],
+          "rows": [
+            ["Warmup + Cosine", "Transformer / LLM", "起步稳，收尾细，曲线平滑", "通常要预先知道总步数"],
+            ["Step Decay", "经典 CNN", "规则简单，容易解释", "学习率折点可能带来抖动"],
+            ["OneCycle", "资源有限时快速训练", "前冲后收，常收敛很快", "超参数更敏感"],
+            ["ReduceLROnPlateau", "小数据研究场景", "不必手写完整计划", "反应滞后，依赖验证集"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 Transformer 训练要用 Warmup？Cosine Decay 相比 Step Decay 的优势是什么？\n\n答：Warmup 是为了解决训练前期统计量不稳定的问题，尤其是 Adam 的一阶矩和二阶矩还没站稳时，直接上峰值学习率很容易让 loss spike。Cosine Decay 的优势是从大步到小步的过渡连续平滑，没有 Step Decay 那种突然降档带来的折点式震荡。"
+        }
+      ]
+    },
+    {
+      "id": "gradient-vanish-explode",
+      "title": "梯度消失与梯度爆炸",
+      "subtitle": "真题：梯度消失和爆炸分别怎么解决？为什么深层网络特别容易出现？",
+      "icon": "💥",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "深层网络最诡异的失败模式是：最后几层明明有损失信号，第一层权重却几乎不动，或者某一步更新后 loss 直接变成 NaN。根源都是链式法则里的重复乘法。反向传播经过 $L$ 层时，要把很多 Jacobian 连乘起来。若每层平均缩小 10%，那就是 $0.9^L$。10 层时还剩 $0.35$，100 层时只剩 $2.7\\times10^{-5}$，浅层几乎收不到梯度，这叫 **梯度消失**。若每层平均放大 10%，那就是 $1.1^{100}\\approx1.38\\times10^4$，一步就可能把参数炸飞，这叫 **梯度爆炸**。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\frac{\\partial \\mathcal{L}}{\\partial \\theta_1} = \\frac{\\partial \\mathcal{L}}{\\partial h_L} \\cdot \\prod_{l=1}^{L} \\frac{\\partial h_l}{\\partial h_{l-1}}$$\n$$0.9^{10} \\approx 0.35, \\quad 0.9^{100} \\approx 2.7\\times10^{-5}, \\quad 1.1^{100} \\approx 1.38\\times10^4$$"
+        },
+        {
+          "type": "table",
+          "layer": 1,
+          "headers": ["问题", "常见症状", "第一反应"],
+          "rows": [
+            ["梯度消失", "浅层参数几乎不动，训练很久都学不到", "看激活函数、初始化、残差连接"],
+            ["梯度爆炸", "loss 突然飙升或变 NaN", "先查学习率，再开梯度裁剪"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "Gradient Clipping 为什么有效",
+          "text": "对抗梯度爆炸最直接的招数是 **Gradient Clipping**。按范数裁剪的规则是：\n$$\\text{if } \\|g\\|_2 > \\text{max\\_norm}, \\quad g \\leftarrow g \\cdot \\frac{\\text{max\\_norm}}{\\|g\\|_2}$$\n举个数值例子。若当前梯度范数是 $20$，而设定 $\\text{max\\_norm}=1$，那么整批梯度都会乘上 $1/20=0.05$。方向完全不变，只是把“爆冲”压回安全区。\n\n梯度消失则更像“信号越传越弱”。残差连接写成 $h_l = F(h_{l-1}) + h_{l-1}$，等于给梯度保留了一条恒等高速公路。即使 $F$ 的导数很小，梯度仍能沿着那条 identity path 传回去，所以 ResNet 和 Pre-LN Transformer 都明显更容易训练深层网络。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["技术", "主要解决", "直觉"],
+          "rows": [
+            ["残差连接", "梯度消失", "给梯度留一条不经过层内缩放的捷径"],
+            ["ReLU / GELU", "梯度消失", "比 Sigmoid 更不容易长期饱和"],
+            ["LayerNorm / BatchNorm", "两者都有帮助", "把激活和梯度量级稳定住"],
+            ["Gradient Clipping", "梯度爆炸", "限制一步更新别超过安全阈值"],
+            ["He / Xavier 初始化", "两者都有帮助", "让一开始的方差别层层失控"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：梯度消失和梯度爆炸各怎么解决？为什么残差连接有用？\n\n答：梯度消失通常靠残差连接、ReLU 或 GELU、合理初始化、LayerNorm 来缓解，因为这些方法能让反向信号别在层层乘法里迅速缩成零。梯度爆炸通常先靠小学习率和 gradient clipping 控住，因为 clipping 保留方向，只缩小范数。残差连接有用的本质是给梯度保留了一条 identity path，让浅层不必完全依赖层内 Jacobian 连乘。"
+        }
+      ]
+    },
+    {
+      "id": "regularization",
+      "title": "正则化：Dropout、Weight Decay 与 Early Stopping",
+      "subtitle": "真题：Dropout 训练和推断行为不同，怎么保持期望一致？L1 和 L2 的稀疏性差别是什么？",
+      "icon": "🛡️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "如果训练集准确率已经 99%，验证集却卡在 78%，模型多半不是不会学，而是在“背题”。**正则化**就是给模型加约束，阻止它把偶然噪声也记下来。**Dropout** 通过随机屏蔽一部分神经元，逼模型别把希望压在单一路径上。**Weight Decay** 通过惩罚大权重，让解更平滑。**Early Stopping** 则是在验证集开始变差时立刻收手，避免继续朝过拟合方向走。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\tilde{h}_i = \\frac{h_i \\cdot \\text{Bernoulli}(1-p)}{1-p} \\quad \\text{(Inverted Dropout)}$$\n$$\\mathcal{L}_{\\text{reg}} = \\mathcal{L} + \\lambda_1\\|w\\|_1 + \\lambda_2\\|w\\|_2^2$$"
+        },
+        {
+          "type": "trap",
+          "layer": 1,
+          "title": "⚠️ L1 和 L2 都收缩权重，但结果不一样",
+          "content": "拿两个权重 $[3,0.3]$ 做 toy model，取 $\\lambda=0.1$。L2 的附加梯度是 $[0.6,0.06]$，大权重缩得更多，小权重缩得很温和。L1 的附加梯度近似是 $[0.1,0.1]$，两个权重都被同样大小地往 0 推，小权重更容易被直接推成 0，所以 L1 更容易得到稀疏解。几何上，L1 的约束边界像菱形，最优点更容易落在坐标轴上。"
+        },
+        { "type": "divider" },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "Dropout、L1、L2 各在防什么",
+          "text": "Dropout 的直觉是“别让模型过度依赖某一条神经通路”。若 $p=0.2$，训练时平均每 5 个神经元就有 1 个被屏蔽，所以网络必须学会冗余表达。Inverted Dropout 在训练时除以 $1-p$，因此当某个激活原本是 $10$ 时，被保留下来就会放大到 $10/0.8=12.5$，而它以 0.8 的概率出现，期望仍是 $10$。\n\nL2 偏好“很多小权重”，L1 偏好“少数非零权重”。继续看上面的 $[3,0.3]$。若学习率取 1，只看正则化项，L2 一步后会把它们推到 $[2.4,0.24]$，两个都还在；L1 一步后变成 $[2.9,0.2]$，小权重更快贴近 0，多走几步就会被清空。Early Stopping 则不改目标函数，它用验证集曲线当刹车踏板，是最朴素也最有效的防过拟合手段之一。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方法", "核心作用", "典型场景", "注意点"],
+          "rows": [
+            ["Dropout", "打断共适应，逼出冗余表示", "全连接层、Transformer FFN", "训练开，推断关"],
+            ["L1", "促稀疏，做特征选择", "高维稀疏特征", "会直接把一批权重推到 0"],
+            ["L2 / Weight Decay", "抑制大权重，偏好平滑解", "几乎所有深度模型", "Adam 里更推荐 AdamW"],
+            ["Early Stopping", "看到验证集变差就停车", "小数据集、训练代价高", "需要可靠验证集"]
+          ]
+        },
+        { "type": "divider" },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：Dropout 训练和推断行为不同，怎么保持期望一致？L1 和 L2 的区别是什么？\n\n答：用 Inverted Dropout，训练时把保留下来的激活除以 $(1-p)$，这样推断时直接关闭 Dropout，激活期望仍和训练期一致。L2 会连续地缩小所有权重，偏好很多小权重；L1 会用近似恒定的力度把权重往 0 推，所以更容易得到稀疏解。"
+        }
+      ]
+    }
+  ]
+}

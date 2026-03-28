@@ -1,0 +1,116 @@
+{
+  "chapters": [
+    {
+      "id": "ch-transformer",
+      "file": "content/ch-transformer.json",
+      "title": "Transformer & 注意力机制",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#58a6ff",
+      "tag": "llm"
+    },
+    {
+      "id": "ch-transformer-arch",
+      "file": "content/ch-transformer-arch.json",
+      "title": "Transformer 架构补全",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#79c0ff",
+      "tag": "llm"
+    },
+    {
+      "id": "ch-transformer-advanced",
+      "file": "content/ch-transformer-advanced.json",
+      "title": "Transformer 进阶：稀疏注意力 & 训练技巧",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#79c0ff",
+      "tag": "llm"
+    },
+    {
+      "id": "ch-transformer-inference",
+      "file": "content/ch-transformer-inference.json",
+      "title": "LLM 推理优化：KV Cache / 投机解码 / 量化",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#a5d6ff",
+      "tag": "llm"
+    },
+    {
+      "id": "ch-llm-alignment",
+      "file": "content/ch-llm-alignment.json",
+      "title": "大语言模型 & 对齐训练",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#3fb950",
+      "tag": "llm"
+    },
+    {
+      "id": "ch-nn-basics",
+      "file": "content/ch-nn-basics.json",
+      "title": "神经网络基础",
+      "navGroup": "深度学习 & 大模型",
+      "dotColor": "#bc8cff",
+      "tag": "dl"
+    },
+    {
+      "id": "ch-ml-classical",
+      "file": "content/ch-ml-classical.json",
+      "title": "经典 ML 算法：线性模型 & SVM",
+      "navGroup": "机器学习",
+      "dotColor": "#d29922",
+      "tag": "ml"
+    },
+    {
+      "id": "ch-ml-tree-methods",
+      "file": "content/ch-ml-tree-methods.json",
+      "title": "树模型 & Boosting",
+      "navGroup": "机器学习",
+      "dotColor": "#e3b341",
+      "tag": "ml"
+    },
+    {
+      "id": "ch-evaluation",
+      "file": "content/ch-evaluation.json",
+      "title": "模型评估与损失函数",
+      "navGroup": "机器学习",
+      "dotColor": "#f778ba",
+      "tag": "ml"
+    },
+    {
+      "id": "ch-optimization",
+      "file": "content/ch-optimization.json",
+      "title": "优化方法",
+      "navGroup": "机器学习",
+      "dotColor": "#39d0d8",
+      "tag": "dl"
+    },
+    {
+      "id": "ch-linear-algebra",
+      "file": "content/ch-linear-algebra.json",
+      "title": "线性代数",
+      "navGroup": "数学基础",
+      "dotColor": "#58a6ff",
+      "tag": "math"
+    },
+    {
+      "id": "ch-probability",
+      "file": "content/ch-probability.json",
+      "title": "概率论与统计",
+      "navGroup": "数学基础",
+      "dotColor": "#3fb950",
+      "tag": "stat"
+    },
+    {
+      "id": "ch-algorithms",
+      "file": "content/ch-algorithms.json",
+      "title": "数据结构与算法",
+      "navGroup": "工程 & 算法",
+      "dotColor": "#d29922",
+      "tag": "algo"
+    },
+    {
+      "id": "ch-numerical",
+      "file": "content/ch-numerical.json",
+      "title": "数值计算",
+      "navGroup": "工程 & 算法",
+      "dotColor": "#f85149",
+      "tag": "math"
+    }
+  ]
+}

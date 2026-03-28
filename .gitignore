@@ -1,0 +1,21 @@
+# Workspace-generated state
+.sisyphus/
+
+# Local scratch research clones
+tmp-research/
+
+# Logs
+*.log
+
+# Windows / editor junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Common temporary files
+*.tmp
+*.temp
+*~
+
+# Accidentally created Windows device placeholder
+nul

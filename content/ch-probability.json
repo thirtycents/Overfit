@@ -1,0 +1,95 @@
+{
+  "id": "ch-probability",
+  "title": "概率论与统计",
+  "tag": "stat",
+  "tagLabel": "数学基础",
+  "desc": "把不确定性说清楚，才能理解模型输出、损失函数和实验结论。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "bayes-theorem",
+      "title": "贝叶斯定理",
+      "subtitle": "真题：阳性率 99% 的检测，为什么不等于你有 99% 概率患病？",
+      "icon": "🧪",
+      "blocks": [
+        {"type":"kitem","layer":1,"labelType":"core","badge":"核心考点","labelTitle":"先验错了，直觉就会翻车","text":"公司体检里某病患病率只有 1%，检测灵敏度 99%，假阳性率 5%。你拿到阳性报告时，最容易犯的错是直接把 99% 当成自己患病概率。真正要算的是 **后验概率**，也就是在看到证据后重新更新信念，这套更新规则叫 **贝叶斯定理**。在 ML 里，垃圾邮件过滤、朴素贝叶斯分类、医学诊断模型校准，本质上都在做这件事。"},
+        {"type":"formula","layer":1,"content":"$$P(A\\mid B)=\\frac{P(B\\mid A)P(A)}{P(B)}$$"},
+        {"type":"kitem","layer":1,"labelType":"note","badge":"其中","labelTitle":"变量解释 + 反事实","text":"其中：$P(A)$ 是先验，$P(B\\mid A)$ 是似然，$P(A\\mid B)$ 是后验，$P(B)$ 是证据。若忽略先验，稀有病场景里模型会系统性高估风险，和类别不平衡下只看命中率一个毛病。"},
+        {"type":"divider"},
+        {"type":"kitem","layer":2,"labelType":"formula","badge":"数字玩具","labelTitle":"10000 人里到底有多少真病人","text":"假设 10000 人体检。真实患病 100 人，其中 99 人测阳性。未患病 9900 人里，5% 会假阳性，也就是 495 人。于是拿到阳性的人一共 594 人，但真正患病只有 99 人，所以后验概率是 $99/594\\approx16.7\\%$。这就是 base rate，也叫**基率**，不能丢。"},
+        {"type":"formula","layer":2,"content":"$$P(\\text{病}\\mid\\text{阳})=\\frac{0.99\\times0.01}{0.99\\times0.01+0.05\\times0.99}$$"},
+        {"type":"trap","layer":2,"title":"⚠️ 反直觉结论","content":"检测已经很准了，但因为先验极小，阳性后的后验仍然只有约 16.7%。先验越稀有，哪怕似然很强，后验也不会像直觉那样轻易冲到 90% 以上。"},
+        {"type":"memory","layer":3,"title":"💡 面试自测","content":"面试官问：贝叶斯定理为什么在类别不平衡问题里特别重要？\n\n答：因为它显式保留先验 $P(A)$。当正类很稀有时，只看似然会高估正类概率，而贝叶斯更新会把基率带回来，所以更适合解释诊断、风控和朴素贝叶斯分类。"},
+        {"type":"code","layer":3,"title":"从零实现","content":"def bayes_posterior(prior, sensitivity, false_positive):\n    # 先算真阳性的联合概率，表示真的患病且测阳\n    true_positive_joint = sensitivity * prior\n    # 再算假阳性的联合概率，表示没病但测阳\n    false_positive_joint = false_positive * (1 - prior)\n    # 证据就是所有阳性的来源之和\n    evidence = true_positive_joint + false_positive_joint\n    # 后验=真阳性来源/全部阳性来源\n    return true_positive_joint / evidence\n\nprint(round(bayes_posterior(0.01, 0.99, 0.05), 4))"}
+      ]
+    },
+    {
+      "id": "common-distributions",
+      "title": "常见概率分布",
+      "subtitle": "Gaussian / Bernoulli / Categorical，到底该在什么场景下用哪一个？",
+      "icon": "🎲",
+      "blocks": [
+        {"type":"kitem","layer":1,"labelType":"core","badge":"核心考点","labelTitle":"输出长什么样，先决定你假设了哪种随机性","text":"你做房价预测时输出是连续值，做点击率预估时输出是 0 或 1，做图像分类时输出是猫狗鸟三选一。三种任务看起来都在“预测”，但背后的随机机制不同，所以要选不同的 **概率分布**。连续噪声常用 **Gaussian distribution**，单次成败常用 **Bernoulli distribution**，多类别单选常用 **Categorical distribution**。它们决定了损失函数和输出层长什么样。"},
+        {"type":"formula","layer":1,"content":"$$P(x)=\\frac{1}{\\sqrt{2\\pi\\sigma^2}}\\exp\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right),\\quad P(x)=p^x(1-p)^{1-x},\\quad P(x=k)=p_k$$"},
+        {"type":"kitem","layer":1,"labelType":"note","badge":"其中","labelTitle":"三种分布各管什么","text":"其中：Gaussian 里 $\\mu$ 是均值，$\\sigma^2$ 是方差。Bernoulli 里 $x\\in\\{0,1\\}$，$p$ 是成功概率。Categorical 里 $p_k$ 是第 $k$ 类概率，且所有类别概率和为 1。若把连续问题硬塞给 Bernoulli，或把单标签分类硬当 Gaussian，损失函数就会和数据生成过程错位。"},
+        {"type":"divider"},
+        {"type":"kitem","layer":2,"labelType":"example","badge":"数字玩具","labelTitle":"三种任务，三种建模方式","text":"房价残差若围绕 0 上下浮动，可近似看成 Gaussian，比如均值 0、标准差 10 万。广告是否点击只有点或不点，像 Bernoulli，若 10 次展示里点了 3 次，可估 $p=0.3$。猫狗鸟分类若 softmax 输出 [0.7, 0.2, 0.1]，这就是一个 Categorical 分布。ML 里线性回归常默认 Gaussian 噪声，逻辑回归对应 Bernoulli，多分类 softmax 对应 Categorical。"},
+        {"type":"formula","layer":2,"content":"$$P([1,0,0])=0.7,\\quad \\mathbb{E}[X]_{\\text{Bernoulli}}=p,\\quad \\mathrm{Var}(X)_{\\text{Bernoulli}}=p(1-p)$$"},
+        {"type":"table","layer":2,"headers":["任务","随机变量","典型分布","常见模型"],"rows":[["房价回归","连续值","Gaussian","线性回归"],["点击率","0/1","Bernoulli","逻辑回归"],["图像分类","单标签多类","Categorical","softmax 分类器"]]},
+        {"type":"memory","layer":3,"title":"💡 面试自测","content":"面试官问：为什么二分类常配 Bernoulli，多分类常配 Categorical？\n\n答：因为二分类标签只取 0 或 1，数据生成过程就是一次成败试验，最自然的似然是 Bernoulli。多分类单标签任务要求所有类别概率和为 1，所以更适合 Categorical，加 softmax 后刚好得到这组概率。"},
+        {"type":"code","layer":3,"title":"从零实现","content":"import math\n\ndef gaussian_pdf(x, mu, sigma):\n    # 连续变量要用密度，不是直接概率\n    coeff = 1.0 / math.sqrt(2 * math.pi * sigma * sigma)\n    exponent = -((x - mu) ** 2) / (2 * sigma * sigma)\n    return coeff * math.exp(exponent)\n\ndef bernoulli_pmf(x, p):\n    # x 只能是 0 或 1，分别对应失败和成功\n    return (p ** x) * ((1 - p) ** (1 - x))\n\ndef categorical_pmf(k, probs):\n    # 单标签多分类时，第 k 类的概率就是该类质量\n    return probs[k]\n\nprint(round(gaussian_pdf(0, 0, 1), 4))\nprint(bernoulli_pmf(1, 0.3))\nprint(categorical_pmf(0, [0.7, 0.2, 0.1]))"}
+      ]
+    },
+    {
+      "id": "mle-map",
+      "title": "MLE vs MAP",
+      "subtitle": "真题：为什么最大似然会过拟合，而最大后验更像带先验的正则化？",
+      "icon": "🎯",
+      "blocks": [
+        {"type":"kitem","layer":1,"labelType":"core","badge":"核心考点","labelTitle":"数据太少时，只听样本会被噪声带偏","text":"你新做一个点击率模型，广告刚上线只展示了 3 次，恰好 3 次都被点了。若你直接说真实点击率就是 100%，这个估计通常会过头。**最大似然估计 MLE** 只找让观测数据最可能出现的参数，**最大后验估计 MAP** 则在此基础上再乘上先验，所以会更稳。在 ML 里，MAP 和正则化、先验约束、本质上是同一条线。"},
+        {"type":"formula","layer":1,"content":"$$\\hat{\\theta}_{\\mathrm{MLE}}=\\arg\\max_\\theta P(D\\mid\\theta),\\qquad \\hat{\\theta}_{\\mathrm{MAP}}=\\arg\\max_\\theta P(D\\mid\\theta)P(\\theta)$$"},
+        {"type":"kitem","layer":1,"labelType":"note","badge":"其中","labelTitle":"两者差别在哪里","text":"其中：$D$ 是数据集，$\\theta$ 是参数。MLE 只看数据，MAP 同时看数据和先验。若样本很多，似然会主导，MLE 和 MAP 会越来越接近。若样本很少，MAP 会把估计往更合理的区域拉回去。"},
+        {"type":"divider"},
+        {"type":"kitem","layer":2,"labelType":"example","badge":"数字玩具","labelTitle":"3 次全点，真实点击率就一定是 1 吗","text":"对 Bernoulli 点击率 $p$，3 次展示都点击，似然是 $p^3$，所以 MLE 会取 $p=1$。但如果你有先验认为新广告 CTR 通常在 0.1 到 0.3 之间，可用一个偏向中间值的先验，MAP 就不会把参数推到 1。对连续参数，如果先验是零均值 Gaussian，取对数后会多出一个惩罚项，这正是 L2 正则化的来源。"},
+        {"type":"formula","layer":2,"content":"$$\\log P(D\\mid\\theta)+\\log P(\\theta)=\\log P(D\\mid\\theta)-\\lambda \\|\\theta\\|_2^2 + C$$"},
+        {"type":"trap","layer":2,"title":"⚠️ 反直觉结论","content":"正则化不是拍脑袋加上去的“工程技巧”。在很多场景里，它就是 MAP 里的先验写成对数后的数学结果。"},
+        {"type":"memory","layer":3,"title":"💡 面试自测","content":"面试官问：MLE 和 MAP 的关系是什么，为什么说 MAP 更抗过拟合？\n\n答：MLE 只最大化似然，容易被小样本噪声推到极端参数。MAP 额外乘上先验，相当于在目标里加入参数偏好，所以小样本时更稳定；当先验是 Gaussian 时，MAP 取对数后就对应 L2 正则化。"},
+        {"type":"code","layer":3,"title":"从零实现","content":"def bernoulli_likelihood(p, data):\n    # 对 0/1 数据逐项相乘，表示整批观测同时出现的概率\n    value = 1.0\n    for x in data:\n        value *= (p ** x) * ((1 - p) ** (1 - x))\n    return value\n\ndef gaussian_prior(p, mu=0.2, sigma=0.2):\n    # 用简单 Gaussian 先验表达“新广告 CTR 往往不会太离谱”\n    import math\n    coeff = 1.0 / math.sqrt(2 * math.pi * sigma * sigma)\n    exponent = -((p - mu) ** 2) / (2 * sigma * sigma)\n    return coeff * math.exp(exponent)\n\ndata = [1, 1, 1]\ngrid = [i / 10 for i in range(1, 10)]\nmle = max(grid, key=lambda p: bernoulli_likelihood(p, data))\nmap_est = max(grid, key=lambda p: bernoulli_likelihood(p, data) * gaussian_prior(p))\nprint(mle, map_est)"}
+      ]
+    },
+    {
+      "id": "information-theory",
+      "title": "熵、KL 散度、交叉熵",
+      "subtitle": "真题：为什么模型越自信但越错，loss 会爆得越厉害？",
+      "icon": "📦",
+      "blocks": [
+        {"type":"kitem","layer":1,"labelType":"core","badge":"核心考点","labelTitle":"同样答错，错得越自信，代价越大","text":"二分类模型把一张狗的图片预测成猫并不稀奇，真正麻烦的是它给猫打了 0.999、给狗只打 0.001。我们需要一个量，既能衡量分布本身有多不确定，又能衡量你拿错分布去编码数据时多浪费，这就会引出 **熵**、**KL divergence** 和 **交叉熵**。在深度学习里，softmax 分类器的核心损失就是这套语言。"},
+        {"type":"formula","layer":1,"content":"$$H(P)=-\\sum_i p_i\\log p_i,\\qquad D_{KL}(P\\|Q)=\\sum_i p_i\\log\\frac{p_i}{q_i},\\qquad H(P,Q)=H(P)+D_{KL}(P\\|Q)$$"},
+        {"type":"kitem","layer":1,"labelType":"note","badge":"其中","labelTitle":"三者各自回答什么问题","text":"其中：$H(P)$ 问的是分布 $P$ 自己有多乱，$D_{KL}(P\\|Q)$ 问的是用 $Q$ 代替 $P$ 多浪费多少信息，$H(P,Q)$ 是用模型分布 $Q$ 编码真实分布 $P$ 的总代价。若真实标签是 one-hot，最小化交叉熵就等价于逼模型把真类概率推高。图谱里的 `cross-entropy-node` 仍由评估章节拥有，这里讲的是它的概率论来源。"},
+        {"type":"divider"},
+        {"type":"kitem","layer":2,"labelType":"example","badge":"数字玩具","labelTitle":"同样答错，两种错法的代价不同","text":"真实分布 $P=[1,0]$，模型一给出 $Q_1=[0.9,0.1]$，模型二给出 $Q_2=[0.51,0.49]$。两者都把真类放第一名时损失不同，交叉熵分别是 $-\\log 0.9\\approx0.105$ 和 $-\\log 0.51\\approx0.673$。如果模型三自信地给错类 0.99，那么真类概率只有 0.01，loss 会变成 $-\\log 0.01\\approx4.605$。所以“自信地错”会被重罚。"},
+        {"type":"formula","layer":2,"content":"$$H(P,Q)=-\\sum_i p_i\\log q_i$$"},
+        {"type":"table","layer":2,"headers":["模型输出 Q","真类概率","交叉熵"],"rows":[["[0.9, 0.1]","0.9","0.105"],["[0.51, 0.49]","0.51","0.673"],["[0.01, 0.99]","0.01","4.605"]]},
+        {"type":"memory","layer":3,"title":"💡 面试自测","content":"面试官问：熵、KL 散度、交叉熵三者是什么关系，为什么交叉熵适合分类？\n\n答：熵衡量真实分布本身的不确定性，KL 衡量模型分布和真实分布之间多出来的信息代价，交叉熵等于熵加 KL。训练时真实标签固定，所以最小化交叉熵本质上是在最小化 KL，让模型分布逼近真实分布。"},
+        {"type":"code","layer":3,"title":"从零实现","content":"import math\n\ndef entropy(probs):\n    # 只累加非零概率，避免 log(0)\n    return -sum(p * math.log(p) for p in probs if p > 0)\n\ndef kl_divergence(p, q):\n    # KL 衡量用 q 近似 p 的额外代价\n    return sum(pi * math.log(pi / qi) for pi, qi in zip(p, q) if pi > 0 and qi > 0)\n\ndef cross_entropy(p, q):\n    # 交叉熵直接看真实分布在模型分布下的编码成本\n    return -sum(pi * math.log(qi) for pi, qi in zip(p, q) if pi > 0 and qi > 0)\n\nP = [1.0, 0.0]\nQ = [0.9, 0.1]\nprint(round(entropy(P), 4))\nprint(round(kl_divergence(P, Q), 4))\nprint(round(cross_entropy(P, Q), 4))"}
+      ]
+    },
+    {
+      "id": "hypothesis-testing",
+      "title": "统计检验",
+      "subtitle": "真题：A/B test 提升了 2%，为什么还不能马上上线？",
+      "icon": "📊",
+      "blocks": [
+        {"type":"kitem","layer":1,"labelType":"core","badge":"核心考点","labelTitle":"差异出现了，不代表差异可靠","text":"你做 A/B test，旧按钮点击率 10%，新按钮点击率 12%，看起来提升了 2 个百分点。但如果每组只测了 50 人，这 2% 很可能只是抽样波动。**统计检验** 要回答的不是“样本上有没有差”，而是“如果其实没差，现在看到这么大的差异稀不稀有”。这套语言在离线实验、线上实验、论文结论里都很常见。"},
+        {"type":"formula","layer":1,"content":"$$z=\\frac{\\hat{p}_1-\\hat{p}_2}{\\sqrt{\\hat{p}(1-\\hat{p})\\left(\\frac{1}{n_1}+\\frac{1}{n_2}\\right)}},\\qquad p\\text{-value}=P(\\lvert Z\\rvert \\ge \\lvert z\\rvert \\mid H_0)$$"},
+        {"type":"kitem","layer":1,"labelType":"note","badge":"其中","labelTitle":"统计检验到底在检验什么","text":"其中：$H_0$ 是原假设，通常表示“没效果”；$p$-value 是在 $H_0$ 为真时，观测到当前或更极端结果的概率；confidence interval 则给出效果量的合理区间。若只看样本均值差，不看波动和样本量，就会把噪声当成收益。"},
+        {"type":"divider"},
+        {"type":"kitem","layer":2,"labelType":"example","badge":"数字玩具","labelTitle":"同样 2% 提升，样本量决定你能不能信","text":"设 A 组 1000 人里 100 人点击，B 组 1000 人里 120 人点击，合并点击率 $\\hat p=(100+120)/2000=0.11$。标准误约为 $\\sqrt{0.11\\times0.89\\times(1/1000+1/1000)}\\approx0.014$，于是 $z\\approx(0.12-0.10)/0.014\\approx1.43$。这还没过常见的 1.96 阈值，所以不能说显著。ML 实验里也是一样，验证集提了 0.3 个点，不代表改动一定真的有效。"},
+        {"type":"formula","layer":2,"content":"$$\\text{CI}_{95\\%}=\\hat{\\Delta} \\pm 1.96 \\times \\text{SE}$$"},
+        {"type":"trap","layer":2,"title":"⚠️ 反直觉结论","content":"p-value 小，不等于原假设为真的概率小。它只是在说：如果原假设真成立，当前数据有多反常。统计显著也不等于业务显著，样本够大时很小的提升也能“显著”。"},
+        {"type":"memory","layer":3,"title":"💡 面试自测","content":"面试官问：p-value 和置信区间分别告诉你什么，为什么 A/B test 不能只看均值差？\n\n答：p-value 衡量的是在原假设成立时，当前结果有多极端；置信区间给的是效果量的不确定范围。只看均值差会忽略样本量和波动，所以很容易把随机噪声误判成真实提升。"},
+        {"type":"code","layer":3,"title":"从零实现","content":"import math\n\ndef two_proportion_z_test(success_a, n_a, success_b, n_b):\n    # 原假设下用 pooled rate 估计共同点击率\n    pooled = (success_a + success_b) / (n_a + n_b)\n    # 标准误反映“纯随机波动下，两组差值大概会飘多远”\n    se = math.sqrt(pooled * (1 - pooled) * (1 / n_a + 1 / n_b))\n    # z 分数越大，说明观测差值越不像随机波动\n    z = (success_b / n_b - success_a / n_a) / se\n    return z\n\ndef normal_cdf(x):\n    # 用误差函数近似标准正态分布的累计概率\n    return 0.5 * (1 + math.erf(x / math.sqrt(2)))\n\nz = two_proportion_z_test(100, 1000, 120, 1000)\np_value = 2 * (1 - normal_cdf(abs(z)))\nprint(round(z, 4), round(p_value, 4))"}
+      ]
+    }
+  ]
+}

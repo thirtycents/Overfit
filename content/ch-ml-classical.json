@@ -1,0 +1,228 @@
+{
+  "id": "ch-ml-classical",
+  "title": "经典 ML 算法：线性模型 & SVM",
+  "tag": "ml",
+  "tagLabel": "机器学习",
+  "desc": "聚焦线性回归、逻辑回归和 SVM。每张卡片都从真实决策痛点切入，再用可手算的玩具模型把公式落地。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "linear-regression",
+      "title": "线性回归 & 正则化",
+      "subtitle": "真题：为什么 L1 会产生稀疏解，L2 只会缩小权重？",
+      "icon": "📈",
+      "iconBg": "rgba(99,102,241,0.12)",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "房租估价的痛点",
+          "text": "你手里只有 3 套房的数据，20㎡ 租 2000 元，40㎡ 租 4000 元，60㎡ 租 6000 元。现在来了一套 50㎡ 的房子，你不想拍脑袋报价，而是想用一条直线把面积映射到租金，这条直线就是线性回归。术语一旦引入，后面就只讨论权重 $w$ 和偏置 $b$。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\hat{y} = wx + b, \\qquad L_{\\text{MSE}} = \\frac{1}{n}\\sum_{i=1}^{n}(y_i-\\hat{y}_i)^2$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "3 个点手算误差",
+          "text": "若取 $w=100, b=0$，则 50㎡ 预测 5000 元，而且 3 个训练点都被完全拟合，MSE 为 0。若取 $w=90, b=200$，3 个点的预测变成 2000、3800、5600，残差为 0、200、400，MSE 变成 $\\frac{0^2+200^2+400^2}{3} \\approx 66667$。MSE 更小的直线，就是更好的拟合。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么正则化能救共线性",
+          "text": "假设你同时喂给模型两个几乎重复的特征，面积 $x_1=[20,40,60]$ 和房间数乘 20 得到的 $x_2=[20,40,60]$。这时 $X^TX$ 接近不可逆，普通最小二乘会在多组大权重之间来回摇摆。正则化做的事很直接，允许训练误差略大一点，但不允许权重无限膨胀。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$L_{\\text{Ridge}} = L_{\\text{MSE}} + \\lambda \\|\\mathbf{w}\\|_2^2, \\qquad L_{\\text{Lasso}} = L_{\\text{MSE}} + \\lambda \\|\\mathbf{w}\\|_1$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "玩具模型",
+          "labelTitle": "L1 为什么会直接砍掉特征",
+          "text": "在二维里看最清楚。若误差最优点落在 $(1.7,0.3)$ 附近，L1 约束 $|w_1|+|w_2|\\le 2$ 的边界是有尖角的菱形，等值线常常先碰到顶点 $(2,0)$，于是第二个特征被直接压成 0。L2 约束 $w_1^2+w_2^2\\le 4$ 的边界是圆，更容易落在 $(1.6,1.2)$ 这种两个维度都非零的位置，所以它更像连续缩小，而不是特征选择。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "L1 稀疏，不是因为它一定比 L2 罚得更重，而是因为它的几何边界有尖角。真正让权重精确落到 0 的，是尖角和次梯度死区。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "Ridge 回归从零实现",
+          "content": "import numpy as np\n\ndef ridge_regression(X, y, lam):\n    # λI 把近似不可逆的 X^T X 拉回可解区域\n    A = X.T @ X + lam * np.eye(X.shape[1])\n    # 右侧仍然是最小二乘的充分统计量 X^T y\n    b = X.T @ y\n    # solve 比直接求逆更稳定\n    return np.linalg.solve(A, b)"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：L1 和 L2 正则化有什么区别，为什么 L1 能做特征选择？\n\n答：L2 给权重平方惩罚，效果是连续缩小权重，主要缓解共线性和过拟合。L1 给权重绝对值惩罚，约束域是有尖角的菱形，最优点更容易落在坐标轴上，所以部分权重会被直接压成 0，这就是稀疏解。"
+        }
+      ]
+    },
+    {
+      "id": "logistic-regression",
+      "title": "逻辑回归",
+      "subtitle": "真题：为什么分类任务常用交叉熵，而不是 MSE？",
+      "icon": "🔀",
+      "iconBg": "rgba(16,185,129,0.12)",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "垃圾邮件过滤的痛点",
+          "text": "你收到一封标题全是大写字母的邮件，只想判断它是不是垃圾邮件，而不是预测一个连续房价。逻辑回归做的事，是先算一个线性分数 $z=\\mathbf{w}^\\top \\mathbf{x}+b$，再把它压到 0 到 1 之间的概率，这个压缩函数叫 Sigmoid。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\hat{p} = \\sigma(z) = \\frac{1}{1+e^{-z}}, \\qquad L_{\\text{CE}} = -\\frac{1}{n}\\sum_{i=1}^n \\left[y_i\\log \\hat{p}_i + (1-y_i)\\log(1-\\hat{p}_i)\\right]$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "把分数翻译成概率",
+          "text": "若某封邮件的线性分数 $z=2$，则 $\\sigma(2)\\approx 0.88$，模型会说它有 88% 概率是垃圾邮件。若另一封邮件 $z=-2$，则 $\\sigma(-2)\\approx 0.12$。阈值通常取 0.5，所以前者判为正类，后者判为负类。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么用交叉熵不用 MSE",
+          "text": "最痛的场景是模型错得很自信。若真实标签 $y=1$，模型却给出 $\\hat{p}=0.01$，交叉熵损失是 $-\\log 0.01 \\approx 4.61$，会给出强烈惩罚。若用 MSE，损失只有 $(1-0.01)^2=0.9801$，而且还要再乘上 Sigmoid 导数 $\\hat{p}(1-\\hat{p})\\approx 0.0099$，传回去的梯度几乎没了，学习会很慢。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\nabla_{\\mathbf{w}} L_{\\text{CE}} = \\frac{1}{n} \\mathbf{X}^\\top(\\hat{\\mathbf{p}}-\\mathbf{y})$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么它本质上还是线性分类器",
+          "text": "Sigmoid 是非线性的，但决策边界来自 $\\hat{p}=0.5$，也就是 $z=0$。所以真正决定分类边界的还是 $\\mathbf{w}^\\top \\mathbf{x}+b=0$ 这张超平面。想画出弯曲边界，你得先手工构造多项式特征，或者换成核方法、树模型、神经网络。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 常见误区",
+          "content": "逻辑回归名字里有回归，但它解决的是分类问题。回归的是 log-odds，最后输出的是概率和类别。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "逻辑回归的一步梯度更新",
+          "content": "import numpy as np\n\ndef train_step(X, y, w, b, lr=0.1):\n    # 线性分数先聚合证据\n    z = X @ w + b\n    # sigmoid 把分数映射成伯努利概率\n    p = 1 / (1 + np.exp(-z))\n    # 交叉熵对 logit 的梯度就是 p - y\n    err = p - y\n    w -= lr * (X.T @ err) / len(X)\n    b -= lr * err.mean()\n    return w, b"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么逻辑回归通常配交叉熵，而不是 MSE？\n\n答：交叉熵来自伯努利分布的最大似然，优化目标更合适，而且在模型错得很自信时梯度依然大。MSE 配 Sigmoid 会额外乘上 $\\hat{p}(1-\\hat{p})$，一旦概率饱和，梯度会显著变小。"
+        }
+      ]
+    },
+    {
+      "id": "svm",
+      "title": "支持向量机 SVM",
+      "subtitle": "真题：什么是最大间隔，C 参数和核技巧各解决什么问题？",
+      "icon": "⚔️",
+      "iconBg": "rgba(245,158,11,0.12)",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "边界要离危险样本多远",
+          "text": "想象两类贷款客户已经被收入特征大致分开。负类最近点在 $x=2$，正类最近点在 $x=4$。你当然可以把分界线画在 2.2、2.8 或 3.0，但 SVM 不满足于分开，它要找离两边最近样本都尽量远的那条线，这个距离就叫 margin。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\min_{\\mathbf{w},b} \\frac{1}{2}\\|\\mathbf{w}\\|^2 \\quad \\text{s.t. } y_i(\\mathbf{w}^\\top \\mathbf{x}_i + b) \\ge 1$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "一维数据看最大间隔",
+          "text": "在一维里最直观。若负类最近点在 2，正类最近点在 4，最优边界就是中点 3，总间隔是 2，几何 margin 是 1。边界只被最近的两个点决定，这两个点就是支持向量。把更远的点从 10 改成 100，都不改变边界。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么最大化间隔等价于最小化范数",
+          "text": "超平面到样本点的距离是 $\\frac{|\\mathbf{w}^\\top \\mathbf{x}+b|}{\\|\\mathbf{w}\\|}$。把最近的正负样本分别规范到 $+1$ 和 $-1$ 这两条边界上后，总间隔就变成 $\\frac{2}{\\|\\mathbf{w}\\|}$。所以想让间隔最大，本质上就是让 $\\|\\mathbf{w}\\|$ 最小。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$L_{\\text{hinge}} = \\sum_{i=1}^n \\max\\left(0, 1 - y_i(\\mathbf{w}^\\top \\mathbf{x}_i+b)\\right) + \\lambda \\|\\mathbf{w}\\|^2$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "expand",
+          "badge": "软间隔",
+          "labelTitle": "C 参数到底在调什么",
+          "text": "若突然混进一个噪声点，明明是正类却落在 $x=2.8$，硬间隔就会几乎无法工作，因为它要求所有点都被零错误分开。软间隔允许这类点越界。C 大，表示你对错分更敏感，模型会拼命贴着异常点走，margin 变窄。C 小，表示你更愿意保住大部分样本的宽 margin，允许少数异常点被错分。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "expand",
+          "badge": "核技巧",
+          "labelTitle": "线性分不开时怎么办",
+          "text": "若数据像同心圆，任何直线都切不开，但映射到更高维后就可能线性可分。核技巧做的事，不是显式把每个点真的抬到高维，而是直接计算高维内积 $K(x,z)=\\phi(x)^\\top\\phi(z)$。这让 SVM 在不显式造高维特征的前提下得到非线性边界。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "标准 SVM 输出的是间隔分数和类别，不是天然概率。很多库能给概率，是因为它们又在分数上额外做了一层概率校准。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：SVM 的 C 参数变大或变小，各会发生什么？\n\n答：C 是错分惩罚系数。C 大时模型更在意训练误差，边界会贴近异常点，margin 变窄，过拟合风险上升。C 小时模型更在意宽间隔，允许少量错分，泛化通常更稳。"
+        }
+      ]
+    }
+  ]
+}

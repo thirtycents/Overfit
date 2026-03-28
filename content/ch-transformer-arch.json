@@ -1,0 +1,186 @@
+{
+  "id": "ch-transformer-arch",
+  "title": "Transformer 架构补全",
+  "tag": "llm",
+  "tagLabel": "🏗️ 架构细节",
+  "desc": "补全多头机制、位置编码与完整 Transformer block，让基础章节形成闭环。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "multi-head-attention",
+      "title": "为什么需要 Multi-Head Attention",
+      "subtitle": "不是把一个注意力拆碎，而是并行学习多种关系",
+      "icon": "🎯",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心动机",
+          "labelTitle": "为什么单头不够",
+          "text": "单头注意力只有一种相似度度量，容易把“语法依赖”“指代关系”“局部邻近”都揉在同一套分数里。**Multi-Head Attention** 用多组投影矩阵把输入送到不同子空间，让不同头各自学习不同类型的关系，然后再把这些视角拼起来。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\begin{aligned} \\operatorname{head}_i &= \\operatorname{Attention}(QW_i^Q, KW_i^K, VW_i^V) \\\\ \\operatorname{MHA}(Q,K,V) &= \\operatorname{Concat}(\\operatorname{head}_1,\\dots,\\operatorname{head}_h)W^O \\end{aligned}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导理解",
+          "labelTitle": "多头学到的是多种子空间关系",
+          "text": "若 $d_{model}$ 固定、头数为 $h$，通常每头维度是 $d_k=d_{model}/h$。这样做的重点不是减少参数，而是让不同头拥有不同的 $W_i^Q,W_i^K,W_i^V$。一个头可以专门学长距离指代，另一个头学局部搭配，再由 $W^O$ 融合。现代模型还会继续演化出 **GQA / MQA**，本质上是在保留多头 Query 的同时共享部分 K/V 来省推理显存。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["机制", "直觉作用", "代价 / 收益"],
+          "rows": [
+            ["单头 Attention", "只有一种关系视角", "表达力受限"],
+            ["MHA", "多子空间并行看关系", "效果更强"],
+            ["GQA / MQA", "多头 Query，共享部分或全部 K/V", "推理更省 KV Cache"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 常见误解",
+          "content": "多头的价值不是“参数更多”。当 $d_{model}$ 固定时，总参数量通常仍在同一量级；真正增加的是关系建模的多样性。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：多头注意力为什么通常比单头更好？\n\n答：因为不同头对应不同投影子空间，可以并行学习不同类型的相关性，而不是让一套分数同时承担所有关系。现代模型再进一步用 GQA / MQA 共享 K/V，在尽量保留效果的同时降低推理显存。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "MHA 核心 reshape",
+          "content": "import torch\n\ndef split_heads(x, num_heads):\n    b, n, d_model = x.shape\n    d_head = d_model // num_heads\n    x = x.view(b, n, num_heads, d_head)\n    return x.transpose(1, 2)  # 把 head 维度提前，方便每个头独立做注意力\n"
+        }
+      ]
+    },
+    {
+      "id": "positional-encoding",
+      "title": "为什么必须注入位置信息",
+      "subtitle": "Attention 天生不懂顺序，所以位置编码不是可选项",
+      "icon": "📐",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心动机",
+          "labelTitle": "没有位置编码会怎样",
+          "text": "Self-Attention 只根据 token 间相似度做加权，本身并不知道谁在前谁在后。若不额外注入位置信息，句子“狗咬人”和“人咬狗”对模型来说只是同一组词的重排。**Positional Encoding** 的任务，就是把“顺序”显式塞回模型。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$X' = X + P$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "方案演进",
+          "labelTitle": "从 Sinusoidal 到 RoPE",
+          "text": "原版 Transformer 把绝对位置向量 $P$ 加到输入上；现代大模型更常用 **RoPE**，不是把位置直接加进 embedding，而是对 $Q,K$ 做按位置旋转，使点积天然携带相对位置信息。面试里常见追问是：为什么 RoPE 在长上下文里更受欢迎？因为它保留的是相对位置信号，更适合外推；截至 2026-03，LLaMA、Qwen 等主流开源 LLM 仍以 RoPE 或其长度扩展变体为主。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\begin{aligned} \\operatorname{PE}(pos,2i)&=\\sin\\!\\left(\\frac{pos}{10000^{2i/d}}\\right), \\quad \\operatorname{PE}(pos,2i+1)=\\cos\\!\\left(\\frac{pos}{10000^{2i/d}}\\right) \\\\ q_m^T k_n &= (R_m q)^T (R_n k) = q^T R_{n-m} k \\end{aligned}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方案", "位置信息类型", "优点", "局限"],
+          "rows": [
+            ["Sinusoidal", "绝对位置", "无可学习参数，可外推", "长距离效果一般"],
+            ["Learned Position", "绝对位置", "简单直接", "超长外推差"],
+            ["RoPE", "相对位置", "现代 LLM 常用，长上下文更友好", "仍需长度扩展技巧"]
+          ]
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 Attention 需要位置编码，RoPE 又解决了什么？\n\n答：因为纯 Attention 对词序置换近似不敏感，必须显式注入顺序。RoPE 把位置信息放进 $Q,K$ 的旋转关系里，让点积直接携带相对距离，因此比单纯绝对位置编码更适合现代长上下文模型。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "二维 RoPE 旋转示意",
+          "content": "import torch\n\ndef rope_pair(x0, x1, theta):\n    c, s = torch.cos(theta), torch.sin(theta)\n    y0 = x0 * c - x1 * s\n    y1 = x0 * s + x1 * c\n    return y0, y1  # 每对相邻维度旋转，目的是把相对位置写进 QK 点积\n"
+        }
+      ]
+    },
+    {
+      "id": "transformer-full-arch",
+      "title": "完整 Transformer Block",
+      "subtitle": "Residual、LayerNorm、FFN，以及 Pre-LN vs Post-LN",
+      "icon": "🏛️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "整层闭环",
+          "labelTitle": "为什么除了 Attention 还要这些结构",
+          "text": "真正可堆深的 Transformer block 不只是 Attention。它还需要 **Residual Connection** 保证信息与梯度有恒等通路，需要 **LayerNorm** 稳定特征尺度，还需要 **FFN** 在每个位置做更强的非线性变换。现代大模型通常采用 **Pre-LN**，很多还把标准 FFN 升级成 **SwiGLU**，把 LayerNorm 变成 **RMSNorm**。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\begin{aligned} x' &= x + \\operatorname{Attention}(\\operatorname{LN}(x)) \\\\ y &= x' + \\operatorname{FFN}(\\operatorname{LN}(x')) \\end{aligned}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "关键差异",
+          "labelTitle": "Pre-LN 为什么成了现代默认",
+          "text": "**Post-LN** 把归一化放在残差之后，深层时梯度更容易被归一化链路扰动；**Pre-LN** 则把归一化放在子层之前，残差主干上保留更干净的恒等路径，所以更容易训练深网络。FFN 则负责逐位置特征扩展与压回，原版常写成两层 MLP；现代 LLM 常用 SwiGLU 提高表达力。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\begin{aligned} \\text{Post-LN: } x_{l+1}&=\\operatorname{LN}(x_l + F(x_l)) \\\\ \\text{Pre-LN: } x_{l+1}&=x_l + F(\\operatorname{LN}(x_l)) \\\\ \\operatorname{LN}(x)&=\\gamma \\odot \\frac{x-\\mu}{\\sqrt{\\sigma^2+\\varepsilon}} + \\beta \\\\ \\operatorname{FFN}(x)&=W_2\\,\\phi(W_1 x) \\end{aligned}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["组件", "解决的问题", "现代常见变体"],
+          "rows": [
+            ["Residual", "深层梯度直通", "所有主流模型都保留"],
+            ["LayerNorm", "稳定特征尺度", "RMSNorm"],
+            ["FFN", "逐位置非线性表达", "SwiGLU / MoE"],
+            ["Pre-LN", "更稳的训练路径", "现代 LLM 默认"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反事实：只保留 Attention 行不行",
+          "content": "不行。没有 Residual 和 Norm，深层训练会变得不稳定；没有 FFN，模型主要在做跨 token 的加权汇总，逐位置的非线性建模能力明显不足。Transformer 的强大来自整层协同，而不是一条注意力公式。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么现代大模型大多用 Pre-LN？\n\n答：因为 Pre-LN 把归一化放到子层前面，残差主干上保留了更直接的恒等梯度路径，深层训练更稳定。顺带一提，很多现代 LLM 还会把 LayerNorm 换成 RMSNorm，把 FFN 换成 SwiGLU。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "Pre-LN block 手撕骨架",
+          "content": "def pre_ln_block(x, ln1, attn, ln2, ffn):\n    x = x + attn(ln1(x))  # 先归一化再进子层，残差主干保留恒等路径\n    x = x + ffn(ln2(x))   # FFN 负责逐位置非线性变换\n    return x\n"
+        }
+      ]
+    }
+  ]
+}

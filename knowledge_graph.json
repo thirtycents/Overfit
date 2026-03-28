@@ -1,0 +1,970 @@
+{
+  "nodes": [
+    {
+      "id": "transformer-node",
+      "title": "Transformer",
+      "chapterId": "ch-transformer",
+      "cardId": "transformer-overview",
+      "related": ["attention-node", "self-attention-node", "residual-connection-node", "layer-norm-node"]
+    },
+    {
+      "id": "attention-node",
+      "title": "Attention",
+      "chapterId": "ch-transformer",
+      "cardId": "attention-intuition",
+      "related": ["self-attention-node", "softmax-node", "scaled-dot-product-node", "multi-head-attention-node"]
+    },
+    {
+      "id": "softmax-node",
+      "title": "Softmax",
+      "chapterId": "ch-transformer",
+      "cardId": "scaled-dot-product",
+      "related": ["attention-node", "scaled-dot-product-node", "cross-entropy-node", "log-sum-exp-node"]
+    },
+    {
+      "id": "self-attention-node",
+      "title": "Self-Attention",
+      "chapterId": "ch-transformer",
+      "cardId": "attention-intuition",
+      "related": ["attention-node", "scaled-dot-product-node", "positional-encoding-node"]
+    },
+    {
+      "id": "scaled-dot-product-node",
+      "title": "Scaled Dot-Product Attention",
+      "chapterId": "ch-transformer",
+      "cardId": "scaled-dot-product",
+      "related": ["self-attention-node", "multi-head-attention-node"]
+    },
+    {
+      "id": "multi-head-attention-node",
+      "title": "Multi-Head Attention",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "multi-head-attention",
+      "related": ["scaled-dot-product-node", "gqa-node", "mqa-node"]
+    },
+    {
+      "id": "gqa-node",
+      "title": "GQA",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "multi-head-attention",
+      "related": ["multi-head-attention-node", "mqa-node"]
+    },
+    {
+      "id": "mqa-node",
+      "title": "MQA",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "multi-head-attention",
+      "related": ["gqa-node"]
+    },
+    {
+      "id": "rope-node",
+      "title": "RoPE",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "positional-encoding",
+      "related": ["positional-encoding-node", "sinusoidal-node", "alibi-node"]
+    },
+    {
+      "id": "positional-encoding-node",
+      "title": "Positional Encoding",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "positional-encoding",
+      "related": ["self-attention-node", "rope-node", "sinusoidal-node"]
+    },
+    {
+      "id": "sinusoidal-node",
+      "title": "Sinusoidal 位置编码",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "positional-encoding",
+      "related": ["rope-node", "alibi-node"]
+    },
+    {
+      "id": "alibi-node",
+      "title": "ALiBi",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "positional-encoding",
+      "related": ["rope-node"]
+    },
+    {
+      "id": "residual-connection-node",
+      "title": "Residual Connection",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["transformer-node", "layer-norm-node", "pre-ln-node"]
+    },
+    {
+      "id": "layer-norm-node",
+      "title": "LayerNorm",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["residual-connection-node", "rms-norm-node", "pre-ln-node"]
+    },
+    {
+      "id": "rms-norm-node",
+      "title": "RMSNorm",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["layer-norm-node", "pre-ln-node"]
+    },
+    {
+      "id": "pre-ln-node",
+      "title": "Pre-LN",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["layer-norm-node", "residual-connection-node"]
+    },
+    {
+      "id": "swiglu-node",
+      "title": "SwiGLU",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["moe-node"]
+    },
+    {
+      "id": "moe-node",
+      "title": "MoE",
+      "chapterId": "ch-transformer-arch",
+      "cardId": "transformer-full-arch",
+      "related": ["swiglu-node"]
+    },
+    {
+      "id": "sparse-attention-node",
+      "title": "稀疏注意力",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "long-context-bottleneck",
+      "related": ["flash-attention-node", "longformer-node"]
+    },
+    {
+      "id": "longformer-node",
+      "title": "Longformer",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "long-context-bottleneck",
+      "related": ["sparse-attention-node"]
+    },
+    {
+      "id": "flash-attention-node",
+      "title": "FlashAttention",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "flash-attention",
+      "related": ["sparse-attention-node", "gqa-node"]
+    },
+    {
+      "id": "gradient-checkpointing-node",
+      "title": "Gradient Checkpointing",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "training-memory-tricks",
+      "related": ["zero-node", "bf16-node"]
+    },
+    {
+      "id": "zero-node",
+      "title": "ZeRO",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "training-memory-tricks",
+      "related": ["gradient-checkpointing-node", "bf16-node"]
+    },
+    {
+      "id": "bf16-node",
+      "title": "bf16",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "training-memory-tricks",
+      "related": ["gradient-checkpointing-node", "zero-node"]
+    },
+    {
+      "id": "mla-node",
+      "title": "MLA",
+      "chapterId": "ch-transformer-advanced",
+      "cardId": "gqa-mqa-mla",
+      "related": ["gqa-node", "mqa-node"]
+    },
+    {
+      "id": "kv-cache-inference-node",
+      "title": "KV Cache",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "kv-cache",
+      "related": ["paged-attention-node", "gqa-node", "mqa-node"]
+    },
+    {
+      "id": "paged-attention-node",
+      "title": "PagedAttention",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "kv-cache",
+      "related": ["kv-cache-inference-node"]
+    },
+    {
+      "id": "speculative-decoding-node",
+      "title": "投机解码",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "speculative-decoding",
+      "related": ["medusa-node", "decode-phase-node"]
+    },
+    {
+      "id": "medusa-node",
+      "title": "Medusa",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "speculative-decoding",
+      "related": ["speculative-decoding-node"]
+    },
+    {
+      "id": "quantization-node",
+      "title": "量化",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "quantization",
+      "related": ["gptq-node", "awq-node", "smoothquant-node", "decode-phase-node"]
+    },
+    {
+      "id": "gptq-node",
+      "title": "GPTQ",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "quantization",
+      "related": ["quantization-node", "awq-node", "smoothquant-node"]
+    },
+    {
+      "id": "awq-node",
+      "title": "AWQ",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "quantization",
+      "related": ["quantization-node", "gptq-node"]
+    },
+    {
+      "id": "smoothquant-node",
+      "title": "SmoothQuant",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "quantization",
+      "related": ["quantization-node", "awq-node", "gptq-node"]
+    },
+    {
+      "id": "prefill-phase-node",
+      "title": "Prefill",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "prefill-vs-decode",
+      "related": ["decode-phase-node", "continuous-batching-node"]
+    },
+    {
+      "id": "decode-phase-node",
+      "title": "Decode",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "prefill-vs-decode",
+      "related": ["prefill-phase-node", "kv-cache-inference-node", "speculative-decoding-node", "quantization-node", "continuous-batching-node"]
+    },
+    {
+      "id": "continuous-batching-node",
+      "title": "Continuous Batching",
+      "chapterId": "ch-transformer-inference",
+      "cardId": "prefill-vs-decode",
+      "related": ["paged-attention-node", "prefill-phase-node", "decode-phase-node"]
+    },
+    {
+      "id": "rlhf-node",
+      "title": "RLHF",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "rlhf-ppo",
+      "related": ["ppo-node", "reward-model-node", "dpo-node", "grpo-node"]
+    },
+    {
+      "id": "ppo-node",
+      "title": "PPO",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "rlhf-ppo",
+      "related": ["rlhf-node", "grpo-node"]
+    },
+    {
+      "id": "reward-model-node",
+      "title": "Reward Model",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "rlhf-ppo",
+      "related": ["rlhf-node", "dpo-node"]
+    },
+    {
+      "id": "dpo-node",
+      "title": "DPO",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "dpo",
+      "related": ["rlhf-node", "grpo-node", "sft-node"]
+    },
+    {
+      "id": "grpo-node",
+      "title": "GRPO",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "grpo-reasoning",
+      "related": ["ppo-node", "dapo-node", "gspo-node", "dpo-node"]
+    },
+    {
+      "id": "dapo-node",
+      "title": "DAPO",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "grpo-reasoning",
+      "related": ["grpo-node", "gspo-node"]
+    },
+    {
+      "id": "gspo-node",
+      "title": "GSPO",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "grpo-reasoning",
+      "related": ["grpo-node", "dapo-node"]
+    },
+    {
+      "id": "sft-node",
+      "title": "SFT",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "sft-alignment-tax",
+      "related": ["rlhf-node", "dpo-node"]
+    },
+    {
+      "id": "bradley-terry-node",
+      "title": "Bradley-Terry 模型",
+      "chapterId": "ch-llm-alignment",
+      "cardId": "rlhf-ppo",
+      "related": ["reward-model-node", "dpo-node"]
+    },
+    {
+      "id": "backprop-node",
+      "title": "反向传播",
+      "chapterId": "ch-nn-basics",
+      "cardId": "backprop",
+      "related": ["chain-rule-node", "relu-node", "vanishing-gradient-node"]
+    },
+    {
+      "id": "vanishing-gradient-node",
+      "title": "梯度消失",
+      "chapterId": "ch-nn-basics",
+      "cardId": "backprop",
+      "related": ["backprop-node", "relu-node", "batch-norm-node"]
+    },
+    {
+      "id": "relu-node",
+      "title": "ReLU",
+      "chapterId": "ch-nn-basics",
+      "cardId": "activation-functions",
+      "related": ["gelu-node", "vanishing-gradient-node"]
+    },
+    {
+      "id": "gelu-node",
+      "title": "GELU",
+      "chapterId": "ch-nn-basics",
+      "cardId": "activation-functions",
+      "related": ["relu-node"]
+    },
+    {
+      "id": "batch-norm-node",
+      "title": "Batch Normalization",
+      "chapterId": "ch-nn-basics",
+      "cardId": "batch-norm",
+      "related": ["vanishing-gradient-node", "dropout-node"]
+    },
+    {
+      "id": "dropout-node",
+      "title": "Dropout",
+      "chapterId": "ch-nn-basics",
+      "cardId": "dropout",
+      "related": ["batch-norm-node"]
+    },
+    {
+      "id": "weight-init-node",
+      "title": "权重初始化",
+      "chapterId": "ch-nn-basics",
+      "cardId": "weight-init",
+      "related": ["xavier-init-node", "he-init-node", "vanishing-gradient-node", "gradient-vanish-node"]
+    },
+    {
+      "id": "xavier-init-node",
+      "title": "Xavier 初始化",
+      "chapterId": "ch-nn-basics",
+      "cardId": "weight-init",
+      "related": ["weight-init-node", "he-init-node", "vanishing-gradient-node"]
+    },
+    {
+      "id": "he-init-node",
+      "title": "He 初始化",
+      "chapterId": "ch-nn-basics",
+      "cardId": "weight-init",
+      "related": ["weight-init-node", "xavier-init-node", "relu-node"]
+    },
+    {
+      "id": "precision-recall-node",
+      "title": "Precision / Recall / F1",
+      "chapterId": "ch-evaluation",
+      "cardId": "precision-recall-f1",
+      "related": ["precision-node", "recall-node", "f1-node", "roc-auc-node", "cross-entropy-node", "focal-loss-node"]
+    },
+    {
+      "id": "precision-node",
+      "title": "Precision",
+      "chapterId": "ch-evaluation",
+      "cardId": "precision-recall-f1",
+      "related": ["recall-node", "f1-node", "precision-recall-node", "pr-auc-node"]
+    },
+    {
+      "id": "recall-node",
+      "title": "Recall",
+      "chapterId": "ch-evaluation",
+      "cardId": "precision-recall-f1",
+      "related": ["precision-node", "f1-node", "precision-recall-node", "pr-auc-node"]
+    },
+    {
+      "id": "f1-node",
+      "title": "F1 Score",
+      "chapterId": "ch-evaluation",
+      "cardId": "precision-recall-f1",
+      "related": ["precision-node", "recall-node", "precision-recall-node"]
+    },
+    {
+      "id": "roc-auc-node",
+      "title": "ROC-AUC / PR-AUC",
+      "chapterId": "ch-evaluation",
+      "cardId": "roc-auc",
+      "related": ["precision-recall-node", "pr-auc-node", "auc-node", "focal-loss-node"]
+    },
+    {
+      "id": "auc-node",
+      "title": "AUC",
+      "chapterId": "ch-evaluation",
+      "cardId": "roc-auc",
+      "related": ["roc-auc-node", "pr-auc-node"]
+    },
+    {
+      "id": "pr-auc-node",
+      "title": "PR-AUC",
+      "chapterId": "ch-evaluation",
+      "cardId": "roc-auc",
+      "related": ["precision-node", "recall-node", "roc-auc-node", "auc-node"]
+    },
+    {
+      "id": "cross-entropy-node",
+      "title": "交叉熵损失",
+      "chapterId": "ch-evaluation",
+      "cardId": "cross-entropy-loss",
+      "related": ["precision-recall-node", "focal-loss-node", "softmax-node"]
+    },
+    {
+      "id": "focal-loss-node",
+      "title": "Focal Loss",
+      "chapterId": "ch-evaluation",
+      "cardId": "focal-loss-imbalance",
+      "related": ["cross-entropy-node", "precision-recall-node"]
+    },
+    {
+      "id": "regression-loss-node",
+      "title": "MSE / MAE / Huber Loss",
+      "chapterId": "ch-evaluation",
+      "cardId": "regression-losses",
+      "related": ["mse-node", "mae-node", "huber-loss-node", "cross-entropy-node"]
+    },
+    {
+      "id": "mse-node",
+      "title": "MSE",
+      "chapterId": "ch-evaluation",
+      "cardId": "regression-losses",
+      "related": ["mae-node", "huber-loss-node", "regression-loss-node", "linear-regression-node"]
+    },
+    {
+      "id": "mae-node",
+      "title": "MAE",
+      "chapterId": "ch-evaluation",
+      "cardId": "regression-losses",
+      "related": ["mse-node", "huber-loss-node", "regression-loss-node"]
+    },
+    {
+      "id": "huber-loss-node",
+      "title": "Huber Loss",
+      "chapterId": "ch-evaluation",
+      "cardId": "regression-losses",
+      "related": ["mse-node", "mae-node", "regression-loss-node"]
+    },
+    {
+      "id": "sgd-momentum-node",
+      "title": "SGD & Momentum",
+      "chapterId": "ch-optimization",
+      "cardId": "sgd-momentum",
+      "related": ["adam-node", "lr-schedule-node", "gradient-vanish-node"]
+    },
+    {
+      "id": "sgd-node",
+      "title": "SGD",
+      "chapterId": "ch-optimization",
+      "cardId": "sgd-momentum",
+      "related": ["momentum-node", "sgd-momentum-node", "lr-schedule-node"]
+    },
+    {
+      "id": "momentum-node",
+      "title": "Momentum",
+      "chapterId": "ch-optimization",
+      "cardId": "sgd-momentum",
+      "related": ["sgd-node", "sgd-momentum-node", "adam-node"]
+    },
+    {
+      "id": "adam-node",
+      "title": "Adam / AdamW",
+      "chapterId": "ch-optimization",
+      "cardId": "adam-adamw",
+      "related": ["sgd-momentum-node", "lr-schedule-node", "regularization-node"]
+    },
+    {
+      "id": "adamw-node",
+      "title": "AdamW",
+      "chapterId": "ch-optimization",
+      "cardId": "adam-adamw",
+      "related": ["adam-node", "weight-decay-node", "regularization-node"]
+    },
+    {
+      "id": "lr-schedule-node",
+      "title": "学习率调度",
+      "chapterId": "ch-optimization",
+      "cardId": "lr-schedule",
+      "related": ["adam-node", "sgd-momentum-node"]
+    },
+    {
+      "id": "warmup-node",
+      "title": "Warmup",
+      "chapterId": "ch-optimization",
+      "cardId": "lr-schedule",
+      "related": ["lr-schedule-node", "adam-node"]
+    },
+    {
+      "id": "gradient-vanish-node",
+      "title": "梯度消失 / 爆炸",
+      "chapterId": "ch-optimization",
+      "cardId": "gradient-vanish-explode",
+      "related": ["sgd-momentum-node", "batch-norm-node", "weight-init-node"]
+    },
+    {
+      "id": "gradient-clip-node",
+      "title": "Gradient Clipping",
+      "chapterId": "ch-optimization",
+      "cardId": "gradient-vanish-explode",
+      "related": ["gradient-vanish-node", "lr-schedule-node"]
+    },
+    {
+      "id": "regularization-node",
+      "title": "Dropout / Weight Decay / Early Stopping",
+      "chapterId": "ch-optimization",
+      "cardId": "regularization",
+      "related": ["adam-node", "dropout-node"]
+    },
+    {
+      "id": "weight-decay-node",
+      "title": "Weight Decay",
+      "chapterId": "ch-optimization",
+      "cardId": "regularization",
+      "related": ["regularization-node", "adamw-node", "dropout-node"]
+    },
+    {
+      "id": "early-stopping-node",
+      "title": "Early Stopping",
+      "chapterId": "ch-optimization",
+      "cardId": "regularization",
+      "related": ["regularization-node", "weight-decay-node"]
+    },
+    {
+      "id": "linear-regression-node",
+      "title": "线性回归",
+      "chapterId": "ch-ml-classical",
+      "cardId": "linear-regression",
+      "related": ["ridge-regression-node", "lasso-node", "logistic-regression-node", "regression-loss-node"]
+    },
+    {
+      "id": "ridge-regression-node",
+      "title": "Ridge Regression",
+      "chapterId": "ch-ml-classical",
+      "cardId": "linear-regression",
+      "related": ["linear-regression-node", "lasso-node"]
+    },
+    {
+      "id": "lasso-node",
+      "title": "Lasso",
+      "chapterId": "ch-ml-classical",
+      "cardId": "linear-regression",
+      "related": ["linear-regression-node", "ridge-regression-node"]
+    },
+    {
+      "id": "logistic-regression-node",
+      "title": "逻辑回归",
+      "chapterId": "ch-ml-classical",
+      "cardId": "logistic-regression",
+      "related": ["linear-regression-node", "svm-node", "cross-entropy-node"]
+    },
+    {
+      "id": "svm-node",
+      "title": "SVM",
+      "chapterId": "ch-ml-classical",
+      "cardId": "svm",
+      "related": ["hinge-loss-node", "kernel-trick-node", "logistic-regression-node"]
+    },
+    {
+      "id": "hinge-loss-node",
+      "title": "Hinge Loss",
+      "chapterId": "ch-ml-classical",
+      "cardId": "svm",
+      "related": ["svm-node", "logistic-regression-node"]
+    },
+    {
+      "id": "kernel-trick-node",
+      "title": "核技巧",
+      "chapterId": "ch-ml-classical",
+      "cardId": "svm",
+      "related": ["svm-node"]
+    },
+    {
+      "id": "decision-tree-node",
+      "title": "决策树",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "decision-tree",
+      "related": ["information-gain-node", "gini-node", "random-forest-node", "xgboost-node"]
+    },
+    {
+      "id": "information-gain-node",
+      "title": "信息增益",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "decision-tree",
+      "related": ["decision-tree-node", "gini-node"]
+    },
+    {
+      "id": "gini-node",
+      "title": "基尼不纯度",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "decision-tree",
+      "related": ["decision-tree-node", "information-gain-node"]
+    },
+    {
+      "id": "random-forest-node",
+      "title": "随机森林",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "decision-tree",
+      "related": ["decision-tree-node", "bagging-node", "xgboost-node"]
+    },
+    {
+      "id": "bagging-node",
+      "title": "Bagging",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "decision-tree",
+      "related": ["random-forest-node", "boosting-node"]
+    },
+    {
+      "id": "xgboost-node",
+      "title": "XGBoost",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "xgboost",
+      "related": ["boosting-node", "decision-tree-node", "random-forest-node"]
+    },
+    {
+      "id": "boosting-node",
+      "title": "Boosting",
+      "chapterId": "ch-ml-tree-methods",
+      "cardId": "xgboost",
+      "related": ["xgboost-node", "bagging-node"]
+    },
+    {
+      "id": "matrix-multiplication-node",
+      "title": "矩阵乘法",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "matrix-multiplication",
+      "related": ["vector-space-node", "jacobian-node", "gradient-node"]
+    },
+    {
+      "id": "eigenvalue-node",
+      "title": "特征值",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "eigenvalues-eigenvectors",
+      "related": ["eigenvector-node", "svd-node"]
+    },
+    {
+      "id": "eigenvector-node",
+      "title": "特征向量",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "eigenvalues-eigenvectors",
+      "related": ["eigenvalue-node", "svd-node", "pca-node"]
+    },
+    {
+      "id": "pca-node",
+      "title": "PCA",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "eigenvalues-eigenvectors",
+      "related": ["eigenvector-node", "svd-node"]
+    },
+    {
+      "id": "svd-node",
+      "title": "SVD",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "svd",
+      "related": ["eigenvalue-node", "eigenvector-node", "low-rank-node"]
+    },
+    {
+      "id": "low-rank-node",
+      "title": "低秩近似",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "svd",
+      "related": ["svd-node"]
+    },
+    {
+      "id": "vector-space-node",
+      "title": "向量空间",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "vector-spaces-norms",
+      "related": ["norm-node", "cosine-similarity-node", "matrix-multiplication-node"]
+    },
+    {
+      "id": "norm-node",
+      "title": "范数",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "vector-spaces-norms",
+      "related": ["vector-space-node", "cosine-similarity-node", "regularization-node"]
+    },
+    {
+      "id": "cosine-similarity-node",
+      "title": "余弦相似度",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "vector-spaces-norms",
+      "related": ["vector-space-node", "norm-node"]
+    },
+    {
+      "id": "gradient-node",
+      "title": "梯度",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "gradients-jacobian",
+      "related": ["jacobian-node", "chain-rule-node", "backprop-node"]
+    },
+    {
+      "id": "jacobian-node",
+      "title": "Jacobian",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "gradients-jacobian",
+      "related": ["gradient-node", "chain-rule-node", "matrix-multiplication-node"]
+    },
+    {
+      "id": "chain-rule-node",
+      "title": "链式法则",
+      "chapterId": "ch-linear-algebra",
+      "cardId": "gradients-jacobian",
+      "related": ["gradient-node", "jacobian-node", "backprop-node"]
+    },
+    {
+      "id": "bayes-theorem-node",
+      "title": "贝叶斯定理",
+      "chapterId": "ch-probability",
+      "cardId": "bayes-theorem",
+      "related": ["mle-node", "map-node", "hypothesis-testing-node"]
+    },
+    {
+      "id": "gaussian-distribution-node",
+      "title": "Gaussian Distribution",
+      "chapterId": "ch-probability",
+      "cardId": "common-distributions",
+      "related": ["bernoulli-distribution-node", "categorical-distribution-node", "map-node"]
+    },
+    {
+      "id": "bernoulli-distribution-node",
+      "title": "Bernoulli Distribution",
+      "chapterId": "ch-probability",
+      "cardId": "common-distributions",
+      "related": ["categorical-distribution-node", "mle-node", "hypothesis-testing-node"]
+    },
+    {
+      "id": "categorical-distribution-node",
+      "title": "Categorical Distribution",
+      "chapterId": "ch-probability",
+      "cardId": "common-distributions",
+      "related": ["bernoulli-distribution-node", "entropy-node", "cross-entropy-node"]
+    },
+    {
+      "id": "mle-node",
+      "title": "MLE",
+      "chapterId": "ch-probability",
+      "cardId": "mle-map",
+      "related": ["map-node", "bayes-theorem-node", "bernoulli-distribution-node"]
+    },
+    {
+      "id": "map-node",
+      "title": "MAP",
+      "chapterId": "ch-probability",
+      "cardId": "mle-map",
+      "related": ["mle-node", "bayes-theorem-node", "gaussian-distribution-node", "regularization-node"]
+    },
+    {
+      "id": "entropy-node",
+      "title": "熵",
+      "chapterId": "ch-probability",
+      "cardId": "information-theory",
+      "related": ["kl-divergence-node", "cross-entropy-node", "categorical-distribution-node"]
+    },
+    {
+      "id": "kl-divergence-node",
+      "title": "KL Divergence",
+      "chapterId": "ch-probability",
+      "cardId": "information-theory",
+      "related": ["entropy-node", "cross-entropy-node", "categorical-distribution-node"]
+    },
+    {
+      "id": "hypothesis-testing-node",
+      "title": "统计检验",
+      "chapterId": "ch-probability",
+      "cardId": "hypothesis-testing",
+      "related": ["p-value-node", "confidence-interval-node", "bayes-theorem-node"]
+    },
+    {
+      "id": "p-value-node",
+      "title": "p-value",
+      "chapterId": "ch-probability",
+      "cardId": "hypothesis-testing",
+      "related": ["hypothesis-testing-node", "confidence-interval-node"]
+    },
+    {
+      "id": "confidence-interval-node",
+      "title": "置信区间",
+      "chapterId": "ch-probability",
+      "cardId": "hypothesis-testing",
+      "related": ["hypothesis-testing-node", "p-value-node"]
+    },
+    {
+      "id": "big-o-node",
+      "title": "Big-O",
+      "chapterId": "ch-algorithms",
+      "cardId": "complexity",
+      "related": ["hash-table-node", "binary-search-node", "bfs-node", "dfs-node"]
+    },
+    {
+      "id": "time-complexity-node",
+      "title": "时间复杂度",
+      "chapterId": "ch-algorithms",
+      "cardId": "complexity",
+      "related": ["big-o-node", "space-complexity-node", "binary-search-node"]
+    },
+    {
+      "id": "space-complexity-node",
+      "title": "空间复杂度",
+      "chapterId": "ch-algorithms",
+      "cardId": "complexity",
+      "related": ["big-o-node", "time-complexity-node", "hash-table-node"]
+    },
+    {
+      "id": "dynamic-programming-node",
+      "title": "动态规划",
+      "chapterId": "ch-algorithms",
+      "cardId": "dynamic-programming",
+      "related": ["viterbi-node", "binary-search-node", "time-complexity-node"]
+    },
+    {
+      "id": "viterbi-node",
+      "title": "Viterbi",
+      "chapterId": "ch-algorithms",
+      "cardId": "dynamic-programming",
+      "related": ["dynamic-programming-node", "graph-search-node"]
+    },
+    {
+      "id": "graph-search-node",
+      "title": "图搜索",
+      "chapterId": "ch-algorithms",
+      "cardId": "graph-search",
+      "related": ["bfs-node", "dfs-node", "dynamic-programming-node"]
+    },
+    {
+      "id": "bfs-node",
+      "title": "BFS",
+      "chapterId": "ch-algorithms",
+      "cardId": "graph-search",
+      "related": ["graph-search-node", "dfs-node", "binary-search-node"]
+    },
+    {
+      "id": "dfs-node",
+      "title": "DFS",
+      "chapterId": "ch-algorithms",
+      "cardId": "graph-search",
+      "related": ["graph-search-node", "bfs-node"]
+    },
+    {
+      "id": "hash-table-node",
+      "title": "哈希表",
+      "chapterId": "ch-algorithms",
+      "cardId": "hash-table",
+      "related": ["big-o-node", "space-complexity-node", "binary-search-node"]
+    },
+    {
+      "id": "binary-search-node",
+      "title": "二分搜索",
+      "chapterId": "ch-algorithms",
+      "cardId": "binary-search",
+      "related": ["two-pointers-node", "big-o-node", "time-complexity-node"]
+    },
+    {
+      "id": "two-pointers-node",
+      "title": "双指针",
+      "chapterId": "ch-algorithms",
+      "cardId": "binary-search",
+      "related": ["binary-search-node", "hash-table-node"]
+    },
+    {
+      "id": "floating-point-node",
+      "title": "浮点数表示",
+      "chapterId": "ch-numerical",
+      "cardId": "floating-point",
+      "related": ["fp32-node", "fp16-node", "bf16-node", "numerical-stability-node"]
+    },
+    {
+      "id": "fp32-node",
+      "title": "FP32",
+      "chapterId": "ch-numerical",
+      "cardId": "floating-point",
+      "related": ["floating-point-node", "fp16-node", "bf16-node"]
+    },
+    {
+      "id": "fp16-node",
+      "title": "FP16",
+      "chapterId": "ch-numerical",
+      "cardId": "floating-point",
+      "related": ["floating-point-node", "fp32-node", "bf16-node"]
+    },
+    {
+      "id": "numerical-stability-node",
+      "title": "数值稳定性",
+      "chapterId": "ch-numerical",
+      "cardId": "numerical-stability",
+      "related": ["log-sum-exp-node", "floating-point-node", "cross-entropy-node"]
+    },
+    {
+      "id": "log-sum-exp-node",
+      "title": "Log-Sum-Exp",
+      "chapterId": "ch-numerical",
+      "cardId": "numerical-stability",
+      "related": ["numerical-stability-node", "cross-entropy-node", "attention-node"]
+    },
+    {
+      "id": "condition-number-node",
+      "title": "条件数",
+      "chapterId": "ch-numerical",
+      "cardId": "condition-number",
+      "related": ["svd-node", "matrix-decomposition-node", "gradient-node"]
+    },
+    {
+      "id": "autograd-node",
+      "title": "自动微分",
+      "chapterId": "ch-numerical",
+      "cardId": "automatic-differentiation",
+      "related": ["chain-rule-node", "backprop-node", "gradient-node"]
+    },
+    {
+      "id": "numerical-differentiation-node",
+      "title": "数值微分",
+      "chapterId": "ch-numerical",
+      "cardId": "automatic-differentiation",
+      "related": ["autograd-node", "gradient-node"]
+    },
+    {
+      "id": "matrix-decomposition-node",
+      "title": "矩阵分解",
+      "chapterId": "ch-numerical",
+      "cardId": "matrix-decomposition",
+      "related": ["lu-decomposition-node", "cholesky-node", "svd-node", "condition-number-node"]
+    },
+    {
+      "id": "lu-decomposition-node",
+      "title": "LU 分解",
+      "chapterId": "ch-numerical",
+      "cardId": "matrix-decomposition",
+      "related": ["matrix-decomposition-node", "cholesky-node"]
+    },
+    {
+      "id": "cholesky-node",
+      "title": "Cholesky 分解",
+      "chapterId": "ch-numerical",
+      "cardId": "matrix-decomposition",
+      "related": ["matrix-decomposition-node", "lu-decomposition-node"]
+    }
+  ]
+}

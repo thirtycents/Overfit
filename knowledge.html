@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI/算法岗笔试备考知识手册</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #1c2333;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #d29922;
+    --accent4: #f85149;
+    --accent5: #bc8cff;
+    --accent6: #39d0d8;
+    --tag-ml: #1f3a5f;
+    --tag-ml-t: #58a6ff;
+    --tag-math: #2d1f5f;
+    --tag-math-t: #bc8cff;
+    --tag-dl: #1f4d38;
+    --tag-dl-t: #3fb950;
+    --tag-algo: #5f3d1f;
+    --tag-algo-t: #d29922;
+    --tag-stat: #4d1f3d;
+    --tag-stat-t: #f778ba;
+    --tag-llm: #1f3f5f;
+    --tag-llm-t: #39d0d8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ===== LAYOUT ===== */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .sidebar-logo .sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  .sidebar-search {
+    padding: 12px 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-search input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .sidebar-search input:focus { border-color: var(--accent); }
+  .sidebar-search input::placeholder { color: var(--text3); }
+
+  .sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+
+  .nav-section-title {
+    padding: 10px 16px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s;
+    font-size: 13px;
+    color: var(--text2);
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: rgba(88,166,255,0.08); color: var(--accent); border-left-color: var(--accent); }
+  .nav-item .dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .nav-item .count {
+    margin-left: auto;
+    font-size: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1px 6px;
+    color: var(--text3);
+  }
+
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    max-width: 960px;
+    padding: 0 40px 80px;
+  }
+
+  .top-bar {
+    position: sticky;
+    top: 0;
+    background: rgba(13,17,23,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .top-bar h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .top-bar .stats {
+    font-size: 12px;
+    color: var(--text3);
+    display: flex;
+    gap: 16px;
+  }
+  .top-bar .stats span { display: flex; align-items: center; gap: 4px; }
+
+  /* ===== CHAPTER ===== */
+  .chapter { display: none; padding-top: 24px; }
+  .chapter.active { display: block; }
+
+  .chapter-header {
+    margin-bottom: 32px;
+  }
+  .chapter-header .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .chapter-header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .chapter-header .desc {
+    color: var(--text2);
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 600px;
+  }
+
+  /* ===== KNOWLEDGE CARD ===== */
+  .section {
+    margin-bottom: 40px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    border-color: rgba(88,166,255,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .card-head {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-head .icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .card-head .info { flex: 1; min-width: 0; }
+  .card-head .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .card-head .card-subtitle {
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .card-head .arrow {
+    color: var(--text3);
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .card.open .arrow { transform: rotate(90deg); }
+
+  .card-body {
+    display: none;
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .card.open .card-body { display: block; }
+
+  /* ===== KNOWLEDGE ITEM ===== */
+  .kitem {
+    margin-top: 16px;
+  }
+  .kitem .kitem-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kitem .kitem-label .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+  }
+
+  .core { color: var(--accent4); }
+  .core .badge { background: rgba(248,81,73,0.15); color: var(--accent4); }
+
+  .expand { color: var(--accent3); }
+  .expand .badge { background: rgba(210,153,34,0.15); color: var(--accent3); }
+
+  .formula { color: var(--accent5); }
+  .formula .badge { background: rgba(188,140,255,0.15); color: var(--accent5); }
+
+  .compare { color: var(--accent6); }
+  .compare .badge { background: rgba(57,208,216,0.15); color: var(--accent6); }
+
+  .kitem p {
+    font-size: 13.5px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 6px;
+  }
+  .kitem p strong { color: var(--text); font-weight: 600; }
+  .kitem p em { color: var(--accent3); font-style: normal; }
+
+  .kitem ul, .kitem ol {
+    padding-left: 20px;
+    margin-bottom: 6px;
+  }
+  .kitem ul li, .kitem ol li {
+    font-size: 13.5px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 3px;
+  }
+  .kitem ul li strong, .kitem ol li strong { color: var(--text); }
+  .kitem ul li em, .kitem ol li em { color: var(--accent3); font-style: normal; }
+
+  /* Formula block */
+  .formula-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent5);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent5);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Trap block */
+  .trap-block {
+    background: rgba(248,81,73,0.06);
+    border: 1px solid rgba(248,81,73,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0;
+  }
+  .trap-block .trap-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .trap-block p {
+    font-size: 13px;
+    color: rgba(248,81,73,0.8);
+    margin: 0;
+  }
+
+  /* Memory block */
+  .memory-block {
+    background: rgba(63,185,80,0.06);
+    border: 1px solid rgba(63,185,80,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0;
+  }
+  .memory-block .memory-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .memory-block p {
+    font-size: 13px;
+    color: rgba(63,185,80,0.85);
+    margin: 0;
+  }
+
+  /* compare table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12.5px;
+  }
+  .compare-table th {
+    background: var(--bg3);
+    color: var(--accent6);
+    font-weight: 600;
+    padding: 7px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .compare-table td {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .compare-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .compare-table td strong { color: var(--text); }
+  .compare-table td.highlight { color: var(--accent3); }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 2px 3px 2px 0;
+  }
+  .tag-ml { background: var(--tag-ml); color: var(--tag-ml-t); }
+  .tag-math { background: var(--tag-math); color: var(--tag-math-t); }
+  .tag-dl { background: var(--tag-dl); color: var(--tag-dl-t); }
+  .tag-algo { background: var(--tag-algo); color: var(--tag-algo-t); }
+  .tag-stat { background: var(--tag-stat); color: var(--tag-stat-t); }
+  .tag-llm { background: var(--tag-llm); color: var(--tag-llm-t); }
+
+  /* divider in card */
+  .kdivider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* progress bar */
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent5));
+  }
+
+  /* search highlight */
+  .highlight { background: rgba(210,153,34,0.3); border-radius: 2px; }
+
+  /* no result */
+  .no-result {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .no-result .emoji { font-size: 40px; margin-bottom: 12px; }
+
+  /* scroll */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; padding: 0 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="title">AI/算法岗笔试<br>备考知识手册</div>
+    <div class="sub">横向扩展 · 举一反三 · 考点全覆盖</div>
+    <div class="progress-bar" style="margin-top:10px"><div class="fill" style="width:78%"></div></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">共 10 大模块 · 60+ 核心考点</div>
+  </div>
+  <div class="sidebar-search">
+    <input type="text" id="searchInput" placeholder="🔍  搜索知识点..." oninput="doSearch(this.value)">
+  </div>
+  <div class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section-title">深度学习 & 大模型</div>
+    <a class="nav-item active" onclick="showChapter('ch1')" href="#">
+      <span class="dot" style="background:#58a6ff"></span> Transformer & 注意力机制 <span class="count">12</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch2')" href="#">
+      <span class="dot" style="background:#3fb950"></span> 大语言模型 & RLHF <span class="count">8</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch3')" href="#">
+      <span class="dot" style="background:#bc8cff"></span> 神经网络基础 <span class="count">10</span>
+    </a>
+    <div class="nav-section-title">机器学习</div>
+    <a class="nav-item" onclick="showChapter('ch4')" href="#">
+      <span class="dot" style="background:#d29922"></span> 经典 ML 算法 <span class="count">12</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch5')" href="#">
+      <span class="dot" style="background:#f778ba"></span> 模型评估与损失函数 <span class="count">10</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch6')" href="#">
+      <span class="dot" style="background:#39d0d8"></span> 优化方法 <span class="count">8</span>
+    </a>
+    <div class="nav-section-title">数学基础</div>
+    <a class="nav-item" onclick="showChapter('ch7')" href="#">
+      <span class="dot" style="background:#58a6ff"></span> 线性代数 <span class="count">10</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch8')" href="#">
+      <span class="dot" style="background:#3fb950"></span> 概率论与统计 <span class="count">10</span>
+    </a>
+    <div class="nav-section-title">工程 & 算法</div>
+    <a class="nav-item" onclick="showChapter('ch9')" href="#">
+      <span class="dot" style="background:#d29922"></span> 数据结构与算法 <span class="count">6</span>
+    </a>
+    <a class="nav-item" onclick="showChapter('ch10')" href="#">
+      <span class="dot" style="background:#f85149"></span> 数值计算 <span class="count">6</span>
+    </a>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <div class="top-bar">
+    <h2 id="topBarTitle">Transformer & 注意力机制</h2>
+    <div class="stats">
+      <span>🎯 <b style="color:var(--text)">60+</b> 核心考点</span>
+      <span>🔄 <b style="color:var(--text)">200+</b> 横向扩展</span>
+    </div>
+  </div>
+
+  <div id="searchResults" style="display:none; padding-top:24px;">
+    <div id="searchContent"></div>
+  </div>
+
+<!-- ==================== CH1 ==================== -->
+<div class="chapter active" id="ch1">
+  <div class="chapter-header">
+    <div class="category-tag tag-llm">🤖 大模型核心</div>
+    <h1>Transformer & 注意力机制</h1>
+    <p class="desc">从笔试真题出发，覆盖 Self-Attention、MHA、GQA、MLA、Flash-Attention、稀疏注意力等全体系，横向扩展所有关联变体。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">核心机制</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(88,166,255,0.1)">⚡</div>
+        <div class="info">
+          <div class="card-title">Scaled Dot-Product Attention（缩放点积注意力）</div>
+          <div class="card-subtitle">真题考点：为什么要除以 √d_k ？GQA 如何分组？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 标准公式</div>
+          <div class="formula-block">Attention(Q,K,V) = softmax( QKᵀ / √d_k ) · V</div>
+          <p>除以 <strong>√d_k</strong> 的原因：当 d_k 较大时，QKᵀ 的点积方差为 d_k，数值会很大，softmax 会进入梯度极小的饱和区（近似 one-hot），梯度消失。除以 √d_k 将方差归一化为 1。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 不同注意力变体对比</div>
+          <table class="compare-table">
+            <tr><th>变体</th><th>公式/机制</th><th>关键特点</th></tr>
+            <tr><td><strong>Dot-Product</strong></td><td>QKᵀ · V</td><td>未缩放，d_k大时梯度消失</td></tr>
+            <tr><td><strong>Scaled Dot-Product</strong></td><td>QKᵀ/√d_k · V</td><td>标准Transformer使用</td></tr>
+            <tr><td><strong>Additive (Bahdanau)</strong></td><td>tanh(W₁Q + W₂K)</td><td>早期seq2seq，参数量大</td></tr>
+            <tr><td><strong>Linear Attention</strong></td><td>φ(Q)(φ(K)ᵀV)</td><td>复杂度降至O(n)，近似</td></tr>
+            <tr><td><strong>Sparse Attention</strong></td><td>仅计算部分注意力</td><td>Longformer/BigBird</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> Multi-Head Attention (MHA)</div>
+          <div class="formula-block">MHA(Q,K,V) = Concat(head₁,...,headₕ) · W^O
+headᵢ = Attention(QWᵢQ, KWᵢK, VWᵢV)</div>
+          <p>多头注意力的<strong>输出方式</strong>：各头结果<em>拼接后线性投影</em>（不是取均值，不是门控）。</p>
+          <p>参数量：每个头 d_k = d_v = d_model / h，总参数量固定，与头数无关（因为头越多，每头维度越小）。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> GQA / MQA / MLA 对比</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>K/V 数量</th><th>优势</th><th>代表模型</th></tr>
+            <tr><td><strong>MHA</strong></td><td>= Q头数</td><td>表达能力强</td><td>BERT, GPT</td></tr>
+            <tr><td><strong>MQA</strong></td><td>1组（所有Q共享）</td><td>KV Cache极小</td><td>PaLM</td></tr>
+            <tr><td><strong>GQA</strong></td><td>g组（每g个Q共享）</td><td>KV Cache小，效果好</td><td>LLaMA-2/3</td></tr>
+            <tr><td><strong>MLA</strong></td><td>低秩压缩</td><td>KV Cache极小</td><td>DeepSeek</td></tr>
+          </table>
+          <div class="memory-block">
+            <div class="memory-title">🧠 记忆口诀</div>
+            <p>GQA：h头分g组，每组 h/g 个头共享同一份K/V。题目问"h=8,g=2，每组几个头共享"→ 8/2 = <strong>4个头</strong>。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> Flash-Attention</div>
+          <p><strong>核心思想：</strong>分块（Tiling）计算，避免将完整 N×N 注意力矩阵写入 HBM（高带宽内存），将显存复杂度从 O(N²) 降至 O(N)。</p>
+          <p><strong>序列并行度提升：</strong>Flash-Attention v2 将序列分块到多个设备，每设备处理的序列更短，但总显存<em>几乎不变</em>（各设备单独计算，总量不减）。</p>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 易错点</div>
+            <p>Flash-Attention 减少的是显存访问次数（IO bound），不是总显存需求；序列并行不改变总显存。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">📍</div>
+        <div class="info">
+          <div class="card-title">位置编码（Positional Encoding）</div>
+          <div class="card-subtitle">真题：Positional Encoding 的作用是什么？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 为什么需要位置编码</div>
+          <p>Self-Attention 本身对<strong>位置不敏感</strong>（排列等变），同一句话词序改变后 attention 输出不变，所以需要显式注入位置信息。</p>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 高频错误</div>
+            <p>Positional Encoding 的目的<strong>不是</strong>解决 RNN 梯度消失问题——Transformer 完全抛弃了 RNN。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 位置编码类型对比</div>
+          <table class="compare-table">
+            <tr><th>类型</th><th>方法</th><th>特点</th><th>代表</th></tr>
+            <tr><td><strong>绝对位置编码</strong></td><td>sin/cos 公式</td><td>固定，可外推</td><td>原版Transformer</td></tr>
+            <tr><td><strong>可学习绝对</strong></td><td>Embedding lookup</td><td>训练学习，不可外推</td><td>BERT, GPT-2</td></tr>
+            <tr><td><strong>相对位置编码</strong></td><td>计算相对距离</td><td>关注相对距离</td><td>T5, Shaw et al.</td></tr>
+            <tr><td><strong>RoPE</strong></td><td>旋转矩阵</td><td>外推能力强</td><td>LLaMA系列</td></tr>
+            <tr><td><strong>ALiBi</strong></td><td>attention偏置</td><td>推理时可外推</td><td>MPT, BLOOM</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(188,140,255,0.1)">🔀</div>
+        <div class="info">
+          <div class="card-title">稀疏注意力（Sparse Attention）</div>
+          <div class="card-subtitle">真题：Longformer 的局部窗口注意力能否单层建模全局依赖？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 三种稀疏注意力</div>
+          <table class="compare-table">
+            <tr><th>模型</th><th>稀疏方式</th><th>关键特点</th></tr>
+            <tr><td><strong>Longformer</strong></td><td>局部窗口 + 全局token</td><td>局部窗口<em>不能</em>单层建模全局；全局token可以</td></tr>
+            <tr><td><strong>BigBird</strong></td><td>局部 + 随机 + 全局</td><td>随机注意力增强连通性和信息传播</td></tr>
+            <tr><td><strong>Sparse Transformer</strong></td><td>固定stride模式</td><td>O(n√n)复杂度</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 降低复杂度的方法汇总</div>
+          <ul>
+            <li><strong>稀疏注意力</strong>：只计算部分位置 → O(n√n) 或 O(n log n)</li>
+            <li><strong>线性注意力</strong>：核函数近似 → O(n)</li>
+            <li><strong>Flash-Attention</strong>：IO优化，复杂度仍 O(n²) 但内存 O(n)</li>
+            <li><strong>GQA/MQA</strong>：减少K/V头数，降低KV Cache，不降低attention复杂度</li>
+            <li><strong>状态空间模型（Mamba）</strong>：完全摆脱 attention → O(n)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(57,208,216,0.1)">🏗️</div>
+        <div class="info">
+          <div class="card-title">Transformer 整体架构</div>
+          <div class="card-subtitle">真题：FFN 和 MHA 各负责什么？GPT/BERT/T5 架构区别？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> MHA vs FFN 职责</div>
+          <table class="compare-table">
+            <tr><th>模块</th><th>作用</th><th>跨位置？</th></tr>
+            <tr><td><strong>Multi-Head Attention</strong></td><td>不同位置间信息融合</td><td class="highlight">✅ 跨位置</td></tr>
+            <tr><td><strong>Feed-Forward Network</strong></td><td>对每个位置独立非线性变换</td><td>❌ 不跨位置</td></tr>
+            <tr><td><strong>Layer Norm</strong></td><td>归一化，稳定训练</td><td>❌ 不跨位置</td></tr>
+            <tr><td><strong>Positional Encoding</strong></td><td>注入位置信息</td><td>—</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> GPT / BERT / T5 架构</div>
+          <table class="compare-table">
+            <tr><th>模型</th><th>架构</th><th>注意力类型</th><th>预训练任务</th></tr>
+            <tr><td><strong>GPT</strong></td><td>Decoder-only</td><td>因果（单向）</td><td>CLM（自回归）</td></tr>
+            <tr><td><strong>BERT</strong></td><td>Encoder-only</td><td>双向</td><td>MLM + NSP</td></tr>
+            <tr><td><strong>T5</strong></td><td>Encoder-Decoder</td><td>Enc双向+Dec因果</td><td>文本到文本</td></tr>
+            <tr><td><strong>XLNet</strong></td><td>Encoder-only</td><td>排列语言模型</td><td>PLM</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 因果语言模型（CLM）要点</div>
+          <ul>
+            <li>GPT 系列：从<strong>左到右</strong>单向因果掩码</li>
+            <li>损失函数：序列<strong>所有位置</strong>的平均负对数似然（不只是最后一个 token）</li>
+            <li>训练目标：预测下一个 token</li>
+            <li>推理：自回归逐步生成，可以 KV Cache 加速</li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 计算瓶颈分析</div>
+          <p>Attention 复杂度 O(N²d)，FFN 复杂度 O(Nd²)：</p>
+          <ul>
+            <li><em>N >> d</em>（长文本）→ Attention 是主要瓶颈</li>
+            <li><em>N << d</em>（短文本/大模型）→ FFN 是主要瓶颈</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(210,153,34,0.1)">🔧</div>
+        <div class="info">
+          <div class="card-title">LayerNorm vs RMSNorm vs BatchNorm</div>
+          <div class="card-subtitle">真题：RMSNorm 取代 LayerNorm 的直接收益？Dropout 推理时关闭？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 归一化方法对比</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>归一化维度</th><th>均值计算</th><th>适用场景</th></tr>
+            <tr><td><strong>BatchNorm</strong></td><td>batch维度</td><td>✅</td><td>CNN，batch > 1</td></tr>
+            <tr><td><strong>LayerNorm</strong></td><td>特征维度</td><td>✅</td><td>Transformer</td></tr>
+            <tr><td><strong>RMSNorm</strong></td><td>特征维度</td><td>❌（省去）</td><td>LLaMA等新LLM</td></tr>
+            <tr><td><strong>InstanceNorm</strong></td><td>单样本特征</td><td>✅</td><td>风格迁移</td></tr>
+            <tr><td><strong>GroupNorm</strong></td><td>分组特征</td><td>✅</td><td>小batch CNN</td></tr>
+          </table>
+          <p style="margin-top:8px"><strong>RMSNorm 优势</strong>：去掉均值计算（中心化），推理与训练均省去一次减法，计算更快；LLaMA、Mistral 等均使用。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> Dropout 推理时行为</div>
+          <p>Dropout 在<strong>推理时关闭</strong>（不随机丢弃），通常在训练时用 Inverted Dropout（权重乘以 1/p 保持期望不变），因此推理时直接使用全部权重，<em>推理时间不变</em>。</p>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 典型陷阱</div>
+            <p>加了 Dropout 的网络推理时间不会增加（Dropout 关闭），和没加 Dropout 时推理时间相同。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== CH2 ==================== -->
+<div class="chapter" id="ch2">
+  <div class="chapter-header">
+    <div class="category-tag tag-llm">🤖 大语言模型</div>
+    <h1>大语言模型 & RLHF</h1>
+    <p class="desc">涵盖 RLHF 训练流程、奖励模型、PPO 算法、LoRA 微调、RAG、推理优化等高频考点及横向扩展。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">训练范式</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">🏆</div>
+        <div class="info">
+          <div class="card-title">RLHF 完整流程</div>
+          <div class="card-subtitle">真题：reward model 训练依赖什么？RLHF 典型算法是？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> RLHF 三阶段</div>
+          <ol>
+            <li><strong>SFT（监督微调）</strong>：在高质量指令数据上做监督学习，使模型学会遵循指令</li>
+            <li><strong>Reward Model 训练</strong>：基于<em>人类偏好排序</em>数据训练奖励模型（不是监管数据，不是随机初始化）</li>
+            <li><strong>RL 优化</strong>：用 <em>PPO（Proximal Policy Optimization）</em>算法，以 RM 分数为奖励优化语言模型</li>
+          </ol>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 混淆点</div>
+            <p>SFT 是第一阶段（不是 RL 阶段）；DQN 用于离散动作空间，不适合 LLM 连续输出；RM 依赖人类偏好排序，不是监管数据。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 其他对齐方法</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>核心思想</th><th>优势</th></tr>
+            <tr><td><strong>RLHF + PPO</strong></td><td>RM打分 + 策略梯度</td><td>效果好，标准方案</td></tr>
+            <tr><td><strong>DPO</strong></td><td>直接偏好优化</td><td>无需RM，更稳定</td></tr>
+            <tr><td><strong>RLAIF</strong></td><td>AI反馈替代人工</td><td>扩展性好</td></tr>
+            <tr><td><strong>Constitutional AI</strong></td><td>原则约束自我批评</td><td>可解释性强</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(188,140,255,0.1)">🔩</div>
+        <div class="info">
+          <div class="card-title">LoRA 参数高效微调</div>
+          <div class="card-subtitle">真题：LoRA 的优点？是否降低推理显存？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> LoRA 原理</div>
+          <div class="formula-block">W' = W₀ + ΔW = W₀ + BA
+B ∈ R^(d×r), A ∈ R^(r×k), r << min(d,k)</div>
+          <p>原模型权重 W₀ <strong>冻结</strong>，只训练低秩矩阵 B 和 A，参数量大幅减少（约原模型的 0.1%~1%）。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> LoRA 优缺点</div>
+          <table class="compare-table">
+            <tr><th>维度</th><th>结论</th></tr>
+            <tr><td>参数量</td><td class="highlight">✅ 大幅减少（只训练 BA）</td></tr>
+            <tr><td>原模型权重</td><td class="highlight">✅ 保持不变（冻结）</td></tr>
+            <tr><td>任务切换</td><td class="highlight">✅ 不同任务用不同 LoRA 模块，快速切换</td></tr>
+            <tr><td>推理显存</td><td>⚠️ <strong>不一定</strong>降低（合并后不变，不合并略增）</td></tr>
+            <tr><td>推理速度</td><td>⚠️ 不一定更快（合并后相同，不合并略慢）</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 常见误区</div>
+            <p>LoRA 降低的是<strong>微调时</strong>的参数量和显存，推理时需要合并 ΔW 到 W₀，合并后显存和标准模型一样。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 其他 PEFT 方法</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>核心思想</th><th>参数位置</th></tr>
+            <tr><td><strong>LoRA</strong></td><td>低秩分解权重矩阵</td><td>QKV权重</td></tr>
+            <tr><td><strong>Prefix Tuning</strong></td><td>在每层前加可训练前缀</td><td>KV序列</td></tr>
+            <tr><td><strong>Prompt Tuning</strong></td><td>输入层加软prompt</td><td>输入嵌入</td></tr>
+            <tr><td><strong>Adapter</strong></td><td>在层间插入小型网络</td><td>残差连接处</td></tr>
+            <tr><td><strong>DoRA</strong></td><td>权重分解为幅度+方向</td><td>权重矩阵</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(57,208,216,0.1)">📦</div>
+        <div class="info">
+          <div class="card-title">RAG & 推理生成策略</div>
+          <div class="card-subtitle">真题：chunk 过大的风险？top-p 采样的作用？温度参数与多样性？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> RAG chunk 大小影响</div>
+          <table class="compare-table">
+            <tr><th>问题</th><th>chunk 过小</th><th>chunk 过大</th></tr>
+            <tr><td>召回</td><td>召回条数可能增多</td><td>召回条数减少</td></tr>
+            <tr><td>噪声</td><td>信息不完整</td><td class="highlight">噪声多，模型难聚焦</td></tr>
+            <tr><td>向量维度</td><td>不变（由模型决定）</td><td>不变</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 生成策略全体系</div>
+          <table class="compare-table">
+            <tr><th>策略</th><th>机制</th><th>多样性</th><th>适用场景</th></tr>
+            <tr><td><strong>贪心搜索</strong></td><td>每步取概率最高</td><td>❌ 零多样性</td><td>确定性输出</td></tr>
+            <tr><td><strong>Beam Search</strong></td><td>保留k条路径</td><td>低</td><td>机器翻译</td></tr>
+            <tr><td><strong>温度采样</strong></td><td>softmax温度缩放</td><td>T↑多样↑</td><td>创意生成</td></tr>
+            <tr><td><strong>Top-k 采样</strong></td><td>只从概率最高k个采样</td><td>中</td><td>对话</td></tr>
+            <tr><td><strong>Top-p (核采样)</strong></td><td>累积概率达p的集合</td><td>动态</td><td>对话/报告</td></tr>
+            <tr><td><strong>Constrained Beam</strong></td><td>约束必须包含的词</td><td>低</td><td>关键词强制</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 温度参数陷阱</div>
+            <p>低温度 → 输出更集中（保守，多样性低）；高温度 → 输出更分散（多样，随机）。要增加多样性应提高温度，而非降低。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 推理阶段优化方法</div>
+          <ul>
+            <li><strong>KV Cache</strong>：缓存历史 token 的 K/V，避免重复计算（GQA/MQA 减小 KV Cache 大小）</li>
+            <li><strong>量化（INT8/INT4）</strong>：减少模型权重精度，降低显存和推理延迟</li>
+            <li><strong>投机采样（Speculative Decoding）</strong>：小模型先生成候选，大模型验证，加速推理</li>
+            <li><strong>DPM-Solver</strong>：扩散模型专用高效 ODE 求解器，大幅降低采样步数</li>
+            <li><strong>DDIM</strong>：非马尔可夫采样，20步达到DDPM 1000步效果</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(248,81,73,0.1)">✨</div>
+        <div class="info">
+          <div class="card-title">涌现能力 & 大模型特性</div>
+          <div class="card-subtitle">真题：涌现能力的定义？预训练是否需要标注数据？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 涌现能力（Emergent Abilities）</div>
+          <p><strong>定义：</strong>当模型规模（参数量、训练数据量）达到某个<em>临界阈值</em>时，<strong>突然展现</strong>而小模型不具备或表现极差的能力。</p>
+          <p>典型例子：GPT-3 的 few-shot 学习、链式推理（Chain-of-Thought）、指令遵循。</p>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 注意区分</div>
+            <p>涌现能力是规模扩大后<strong>突然出现</strong>（不是缩小，不是手动添加），与硬件无关。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 预训练 vs 微调 vs 提示</div>
+          <table class="compare-table">
+            <tr><th>阶段</th><th>数据需求</th><th>参数更新</th></tr>
+            <tr><td><strong>预训练</strong></td><td class="highlight">无监督，不需标注</td><td>全参数</td></tr>
+            <tr><td><strong>SFT</strong></td><td>有标注指令数据</td><td>全参数或PEFT</td></tr>
+            <tr><td><strong>LoRA微调</strong></td><td>有标注数据</td><td>低秩矩阵</td></tr>
+            <tr><td><strong>Prompt/ICL</strong></td><td>少量示例</td><td>❌ 不更新</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CH3 ==================== -->
+<div class="chapter" id="ch3">
+  <div class="chapter-header">
+    <div class="category-tag tag-dl">🧠 深度学习</div>
+    <h1>神经网络基础</h1>
+    <p class="desc">激活函数、损失函数、反向传播、Hessian、RNN/GRU/LSTM、序列建模模式等全覆盖。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">激活函数 & 基础组件</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">⚡</div>
+        <div class="info">
+          <div class="card-title">激活函数全系列</div>
+          <div class="card-subtitle">真题：ReLU 对 [0,1,2,3] 的输出？Softmax 的作用？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 常见激活函数公式</div>
+          <table class="compare-table">
+            <tr><th>函数</th><th>公式</th><th>输出范围</th><th>特点</th></tr>
+            <tr><td><strong>ReLU</strong></td><td>max(0, x)</td><td>[0, +∞)</td><td>简单，正区间梯度恒1</td></tr>
+            <tr><td><strong>Sigmoid</strong></td><td>1/(1+e⁻ˣ)</td><td>(0, 1)</td><td>梯度消失，二分类输出</td></tr>
+            <tr><td><strong>Tanh</strong></td><td>(eˣ-e⁻ˣ)/(eˣ+e⁻ˣ)</td><td>(-1, 1)</td><td>零中心，梯度消失</td></tr>
+            <tr><td><strong>GELU</strong></td><td>x·Φ(x)</td><td>(-∞, +∞)</td><td>BERT/GPT标准激活</td></tr>
+            <tr><td><strong>SiLU/Swish</strong></td><td>x·sigmoid(x)</td><td>(-∞, +∞)</td><td>LLaMA标准激活</td></tr>
+            <tr><td><strong>Leaky ReLU</strong></td><td>max(αx, x)</td><td>(-∞, +∞)</td><td>解决 dying ReLU</td></tr>
+          </table>
+          <div class="memory-block">
+            <div class="memory-title">🧠 ReLU 考点</div>
+            <p>输入 [0,1,2,3] → ReLU → [0,1,2,3]（全非负，原样输出）。输入 [-1,0,1] → ReLU → [0,0,1]。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> Softmax 详解</div>
+          <div class="formula-block">softmax(xᵢ) = exp(xᵢ) / Σⱼ exp(xⱼ)
+
+数值稳定版本：xᵢ -= max(x)  # 先减最大值，数学等价</div>
+          <p>Softmax 作用：将任意实数向量映射到<strong>[0,1] 区间且和为1的概率分布</strong>（不是[-1,1]，不是对数概率，不是防梯度爆炸）。</p>
+          <p>与交叉熵结合：softmax 输出概率 → 交叉熵计算 log loss，反向传播梯度简洁。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(188,140,255,0.1)">🔄</div>
+        <div class="info">
+          <div class="card-title">RNN / LSTM / GRU</div>
+          <div class="card-subtitle">真题：GRU 重置门/更新门公式？RNN 适合什么任务？序列建模模式？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> GRU 公式（完整）</div>
+          <div class="formula-block">rₜ = σ(xₜWₓᵣ + hₜ₋₁Wₕᵣ + bᵣ)    # 重置门 reset gate
+zₜ = σ(xₜWₓᵢ + hₜ₋₁Wₕᵢ + bᵢ)    # 更新门 update gate
+h̃ₜ = tanh(xₜWₓₕ + (rₜ⊙hₜ₋₁)Wₕₕ + bₕ)  # 候选隐状态
+hₜ = (1-zₜ)⊙hₜ₋₁ + zₜ⊙h̃ₜ       # 最终隐状态</div>
+          <p><strong>重置门 rₜ</strong>：控制保留多少历史，rₜ 小 → 历史被"清空"。</p>
+          <p><strong>更新门 zₜ</strong>：控制新旧状态的切换，zₜ 大 → 更新更多。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> RNN / GRU / LSTM 对比</div>
+          <table class="compare-table">
+            <tr><th>模型</th><th>门数</th><th>参数量</th><th>梯度消失</th><th>适用</th></tr>
+            <tr><td><strong>RNN</strong></td><td>0</td><td>少</td><td>严重</td><td>短序列</td></tr>
+            <tr><td><strong>GRU</strong></td><td>2（重置+更新）</td><td>中</td><td>缓解</td><td>中等序列</td></tr>
+            <tr><td><strong>LSTM</strong></td><td>3（遗忘+输入+输出）</td><td>多</td><td>缓解</td><td>长序列</td></tr>
+            <tr><td><strong>双向RNN</strong></td><td>—</td><td>2倍</td><td>—</td><td>编码任务</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 序列建模模式</div>
+          <table class="compare-table">
+            <tr><th>模式</th><th>输入</th><th>输出</th><th>例子</th></tr>
+            <tr><td><strong>一对一</strong></td><td>单个</td><td>单个</td><td>图像分类</td></tr>
+            <tr><td class="highlight"><strong>多对一</strong></td><td>序列</td><td>单个</td><td><em>情感分析</em>（真题）</td></tr>
+            <tr><td><strong>一对多</strong></td><td>单个</td><td>序列</td><td>图像描述</td></tr>
+            <tr><td><strong>多对多(等长)</strong></td><td>序列</td><td>等长序列</td><td>NER, 词性标注</td></tr>
+            <tr><td><strong>多对多(不等长)</strong></td><td>序列</td><td>不等长序列</td><td>机器翻译</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(210,153,34,0.1)">🔢</div>
+        <div class="info">
+          <div class="card-title">Hessian-Vector Product & 二阶优化</div>
+          <div class="card-subtitle">真题：Hv 的核心计算思路？Fisher 信息近似？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 高效计算 Hv</div>
+          <p>直接计算 Hessian 矩阵的复杂度为 O(n²)，但 Hessian-Vector Product 可以用反向传播高效计算：</p>
+          <ol>
+            <li>正常计算梯度 g = ∇L(θ)</li>
+            <li>将 g 视为新的"损失"（标量 g·v），对 θ 再次做反向传播</li>
+            <li>得到的梯度即为 Hv</li>
+          </ol>
+          <div class="formula-block">Hv = ∇(gᵀv)   # 二阶反向传播，复杂度 O(n)</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 一阶 vs 二阶优化</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>阶次</th><th>信息使用</th><th>复杂度</th></tr>
+            <tr><td><strong>SGD/Adam</strong></td><td>一阶</td><td>梯度</td><td>O(n)</td></tr>
+            <tr><td><strong>牛顿法</strong></td><td>二阶</td><td>Hessian</td><td>O(n³)</td></tr>
+            <tr><td><strong>拟牛顿（BFGS）</strong></td><td>近似二阶</td><td>近似 Hessian</td><td>O(n²)</td></tr>
+            <tr><td><strong>共轭梯度法</strong></td><td>近似二阶</td><td>曲率信息</td><td>O(n)</td></tr>
+            <tr><td><strong>K-FAC</strong></td><td>近似二阶</td><td>Fisher 信息</td><td>O(n)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== CH4 ==================== -->
+<div class="chapter" id="ch4">
+  <div class="chapter-header">
+    <div class="category-tag tag-ml">🤖 机器学习</div>
+    <h1>经典 ML 算法</h1>
+    <p class="desc">朴素贝叶斯、SVM、决策树、集成学习、聚类、降维等经典算法考点及横向扩展。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">分类与回归</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(210,153,34,0.1)">📊</div>
+        <div class="info">
+          <div class="card-title">朴素贝叶斯 & 贝叶斯定理</div>
+          <div class="card-subtitle">真题：高斯NB适合连续还是离散？先验/后验概率区别？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 贝叶斯公式</div>
+          <div class="formula-block">P(c|x) = P(x|c) · P(c) / P(x)
+后验 ∝ 似然 × 先验</div>
+          <ul>
+            <li><strong>先验（Prior）P(c)</strong>：观测数据前的初始概率估计</li>
+            <li><strong>似然（Likelihood）P(x|c)</strong>：已知类别时，观测到特征的概率</li>
+            <li><strong>后验（Posterior）P(c|x)</strong>：观测到数据后更新的概率，<em>不超过1</em></li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 三种朴素贝叶斯</div>
+          <table class="compare-table">
+            <tr><th>类型</th><th>适合特征</th><th>P(x|c) 假设</th><th>典型应用</th></tr>
+            <tr><td><strong>高斯 NB</strong></td><td class="highlight">连续型（实数）</td><td>正态分布</td><td>鸢尾花分类</td></tr>
+            <tr><td><strong>多项式 NB</strong></td><td class="highlight">离散（计数/频次）</td><td>多项式分布</td><td>文本分类</td></tr>
+            <tr><td><strong>伯努利 NB</strong></td><td class="highlight">二值特征（0/1）</td><td>伯努利分布</td><td>垃圾邮件</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 高频陷阱</div>
+            <p>高斯朴素贝叶斯适合<strong>连续型</strong>特征（假设正态分布），不适合离散型特征。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 垃圾邮件分类流程</div>
+          <p>P(垃圾|关键词) ∝ P(关键词|垃圾) · P(垃圾) → 用贝叶斯定理<em>根据关键词更新</em>邮件是垃圾的后验概率。</p>
+          <p><strong>朴素假设</strong>：各关键词在给定类别下相互独立 → P(x|c) = Π P(xᵢ|c)。</p>
+          <p><strong>拉普拉斯平滑</strong>：P(w|c) = (count(w,c)+1) / (Σ count(w',c) + V)，防止零概率。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(248,119,186,0.1)">🌳</div>
+        <div class="info">
+          <div class="card-title">决策树 & 集成学习</div>
+          <div class="card-subtitle">真题：GBDT vs Bagging？Random Forest 属于哪类？信息增益公式？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> Bagging vs Boosting</div>
+          <table class="compare-table">
+            <tr><th>维度</th><th>Bagging</th><th>Boosting</th></tr>
+            <tr><td>代表算法</td><td class="highlight"><strong>Random Forest</strong></td><td class="highlight"><strong>GBDT, AdaBoost, XGBoost</strong></td></tr>
+            <tr><td>训练方式</td><td>并行训练多个弱学习器</td><td>串行，每个模型纠正上一个的错误</td></tr>
+            <tr><td>降低</td><td>方差（variance）</td><td>偏差（bias）</td></tr>
+            <tr><td>Bootstrap 采样</td><td>✅ 有放回采样</td><td>使用全部或加权样本</td></tr>
+            <tr><td>过拟合风险</td><td>低（并行独立）</td><td>可能（串行累积错误）</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> GBDT 特点</div>
+          <ul>
+            <li>在<strong>稠密数据</strong>上表现好（优于稀疏数据，非反之）</li>
+            <li>不需要对输入数据做特殊预处理（归一化等）</li>
+            <li>高维<strong>稀疏数据</strong>上表现一般差（GBDT 特性）</li>
+            <li>预测阶段各棵树输出<strong>可并行计算</strong>后求和，预测速度快</li>
+            <li>Adam 是一阶优化，<em>不</em>属于二阶方法（不使用 Hessian）</li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 信息增益 & 相关指标</div>
+          <div class="formula-block">信息增益 IG(Y;X) = H(Y) - H(Y|X)
+熵 H(X) = -Σ p(x) log p(x)
+条件熵 H(Y|X) = Σ p(x) H(Y|X=x)</div>
+          <table class="compare-table">
+            <tr><th>指标</th><th>公式</th><th>用途</th></tr>
+            <tr><td>信息增益 IG</td><td>H(Y) - H(Y|X)</td><td>ID3 决策树分裂</td></tr>
+            <tr><td>信息增益率</td><td>IG / H(X)</td><td>C4.5，减少高基数偏好</td></tr>
+            <tr><td>基尼系数</td><td>1 - Σ p²</td><td>CART 决策树</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(57,208,216,0.1)">🎯</div>
+        <div class="info">
+          <div class="card-title">SVM 与核函数</div>
+          <div class="card-subtitle">真题：哪些可以作为SVM核函数？Hinge Loss 的用途？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> SVM 核函数</div>
+          <table class="compare-table">
+            <tr><th>核函数</th><th>公式</th><th>是否满足Mercer</th></tr>
+            <tr><td><strong>线性核</strong></td><td>K(x,y) = xᵀy</td><td class="highlight">✅</td></tr>
+            <tr><td><strong>多项式核</strong></td><td>K(x,y) = (xᵀy+c)ᵈ</td><td class="highlight">✅</td></tr>
+            <tr><td><strong>RBF（高斯）核</strong></td><td>K(x,y) = exp(-γ‖x-y‖²)</td><td class="highlight">✅</td></tr>
+            <tr><td><strong>Sigmoid 核</strong></td><td>K(x,y) = tanh(αxᵀy+c)</td><td>条件满足时 ✅</td></tr>
+            <tr><td><strong>逻辑核</strong></td><td>—</td><td>❌ 非标准核函数</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 迁移学习适用场景</div>
+          <table class="compare-table">
+            <tr><th>数据量</th><th>任务相关性</th><th>推荐策略</th></tr>
+            <tr><td>充足</td><td>高度相关</td><td>可直接从头训练或微调</td></tr>
+            <tr><td>充足</td><td>无关</td><td>从头训练</td></tr>
+            <tr><td>不足</td><td>高度相关</td><td class="highlight"><strong>迁移学习（最佳场景）</strong></td></tr>
+            <tr><td>不足</td><td>无关</td><td>收集更多数据或Domain Adaptation</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">🔵</div>
+        <div class="info">
+          <div class="card-title">聚类算法全系列</div>
+          <div class="card-subtitle">真题：K-Means收敛条件？DBSCAN特点？GMM软分配？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> K-Means 要点</div>
+          <ul>
+            <li><strong>目标函数</strong>：最小化簇内平方和（SSE/Inertia）</li>
+            <li><strong>收敛条件</strong>：目标函数不再变化 = 簇中心点不再移动（局部最优，非全局）</li>
+            <li><strong>迭代</strong>：每轮更新所有簇中心（E步分配 + M步更新均值）</li>
+            <li><strong>局限</strong>：需指定K，对初值敏感，不处理噪声，不适合非球形簇</li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 聚类算法对比</div>
+          <table class="compare-table">
+            <tr><th>算法</th><th>需指定K</th><th>处理噪声</th><th>形状</th><th>分配方式</th></tr>
+            <tr><td><strong>K-Means</strong></td><td>✅</td><td>❌</td><td>球形</td><td>硬分配</td></tr>
+            <tr><td><strong>GMM</strong></td><td>✅</td><td>❌</td><td>椭球形</td><td class="highlight">软分配（概率）</td></tr>
+            <tr><td><strong>DBSCAN</strong></td><td class="highlight">❌自动</td><td class="highlight">✅</td><td>任意形状</td><td>硬分配</td></tr>
+            <tr><td><strong>层次聚类</strong></td><td>❌（可后切）</td><td>❌</td><td>任意</td><td>树状结构</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 层次聚类陷阱</div>
+            <p>层次聚类可以通过切割 Dendrogram 得到任意层数的<strong>扁平簇集合</strong>，不是"只能生成固定层次结构"。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 距离度量</div>
+          <table class="compare-table">
+            <tr><th>距离</th><th>公式</th><th>别名</th></tr>
+            <tr><td><strong>欧氏距离</strong></td><td>√Σ(xᵢ-yᵢ)²</td><td>L2 距离</td></tr>
+            <tr><td><strong>曼哈顿距离</strong></td><td>Σ|xᵢ-yᵢ|</td><td class="highlight">爱明顿距离，L1 距离</td></tr>
+            <tr><td><strong>切比雪夫距离</strong></td><td>max|xᵢ-yᵢ|</td><td>L∞ 距离</td></tr>
+            <tr><td><strong>闵可夫斯基距离</strong></td><td>[Σ|xᵢ-yᵢ|ᵖ]^(1/p)</td><td>p=1→曼哈顿，p=2→欧氏</td></tr>
+            <tr><td><strong>余弦距离</strong></td><td>1 - (x·y)/(‖x‖‖y‖)</td><td>文本相似度</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== CH5 ==================== -->
+<div class="chapter" id="ch5">
+  <div class="chapter-header">
+    <div class="category-tag tag-ml">📊 模型评估</div>
+    <h1>模型评估与损失函数</h1>
+    <p class="desc">混淆矩阵、Precision/Recall/F1/AUC、各类损失函数、正则化方法全覆盖。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">评估指标</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(247,120,186,0.1)">📏</div>
+        <div class="info">
+          <div class="card-title">混淆矩阵 & 评估指标全系列</div>
+          <div class="card-subtitle">真题：F1-score 计算？AUC 对类别不平衡的敏感性？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 混淆矩阵四象限</div>
+          <div class="formula-block">预测正  预测负
+实际正  TP      FN   ← 行求和 = 实际正例数
+实际负  FP      TN   ← 行求和 = 实际负例数</div>
+          <table class="compare-table">
+            <tr><th>指标</th><th>公式</th><th>含义</th></tr>
+            <tr><td><strong>Accuracy</strong></td><td>(TP+TN)/(TP+TN+FP+FN)</td><td>总体正确率</td></tr>
+            <tr><td><strong>Precision</strong></td><td>TP/(TP+FP)</td><td>预测为正中真正是正的比例</td></tr>
+            <tr><td><strong>Recall</strong></td><td>TP/(TP+FN)</td><td>实际为正中被正确预测的比例</td></tr>
+            <tr><td><strong>F1</strong></td><td>2·P·R/(P+R)</td><td>Precision 和 Recall 的调和均值</td></tr>
+            <tr><td><strong>TPR</strong></td><td>= Recall = TP/(TP+FN)</td><td>真正率（ROC 纵轴）</td></tr>
+            <tr><td><strong>FPR</strong></td><td>FP/(FP+TN)</td><td>假正率（ROC 横轴）</td></tr>
+            <tr><td><strong>AUC</strong></td><td>ROC 曲线下面积</td><td>对类别不平衡<em>不敏感</em></td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label formula"><span class="badge">公式练习</span> 真题计算</div>
+          <div class="formula-block"># 题：TP=80,FP=20,TN=180,FN=20
+Precision = 80/(80+20) = 0.80
+Recall    = 80/(80+20) = 0.80
+F1 = 2×0.8×0.8/(0.8+0.8) = 0.80
+
+# 题：TP=50,FP=10,TN=30,FN=10
+Accuracy = (50+30)/(50+30+10+10) = 80/100 = 0.80</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 类别不平衡处理</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>思路</th></tr>
+            <tr><td>过采样（SMOTE）</td><td>增加少数类样本</td></tr>
+            <tr><td>欠采样</td><td>减少多数类样本</td></tr>
+            <tr><td>样本权重</td><td>少数类权重更高</td></tr>
+            <tr><td>Focal Loss</td><td>对难分样本加大权重</td></tr>
+            <tr><td>AUC/F1 代替 Accuracy</td><td>评估指标不受不平衡影响</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ Sigmoid+BCE 不能天然解决类不平衡</div>
+            <p>必须结合 class weights 或 Focal Loss 才能有效处理类别不平衡问题。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(88,166,255,0.1)">💰</div>
+        <div class="info">
+          <div class="card-title">损失函数全系列</div>
+          <div class="card-subtitle">真题：交叉熵 vs MSE 应用场景？Hinge Loss 用途？BLEU能否训练？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 损失函数汇总</div>
+          <table class="compare-table">
+            <tr><th>损失函数</th><th>公式</th><th>任务</th><th>特点</th></tr>
+            <tr><td><strong>交叉熵</strong></td><td>-Σ y log(ŷ)</td><td>分类</td><td>概率分布差异，配合softmax</td></tr>
+            <tr><td><strong>BCE</strong></td><td>-y log(p)-(1-y)log(1-p)</td><td>二分类</td><td>配合sigmoid</td></tr>
+            <tr><td><strong>MSE</strong></td><td>Σ(y-ŷ)²/n</td><td>回归</td><td>对异常值敏感</td></tr>
+            <tr><td><strong>MAE</strong></td><td>Σ|y-ŷ|/n</td><td>回归</td><td>鲁棒异常值</td></tr>
+            <tr><td><strong>Hinge Loss</strong></td><td>max(0, 1-y·f(x))</td><td>SVM/分类</td><td>间隔最大化</td></tr>
+            <tr><td><strong>KL 散度</strong></td><td>Σ p log(p/q)</td><td>分布差异</td><td>非对称，≥0</td></tr>
+            <tr><td><strong>Focal Loss</strong></td><td>-αₜ(1-pₜ)ᵞ log(pₜ)</td><td>类别不平衡</td><td>难样本加权</td></tr>
+          </table>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ BLEU/ROUGE 不能直接用于训练</div>
+            <p>BLEU、ROUGE 不可微（离散匹配），不能直接用作梯度下降的损失函数，只能用于评估。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 正则化方法</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>惩罚项</th><th>效果</th><th>特点</th></tr>
+            <tr><td><strong>L1（Lasso）</strong></td><td>λΣ|wᵢ|</td><td>稀疏解</td><td>特征选择</td></tr>
+            <tr><td><strong>L2（Ridge）</strong></td><td>λΣwᵢ²</td><td>权重均匀小</td><td>防过拟合常用</td></tr>
+            <tr><td><strong>Elastic Net</strong></td><td>L1+L2</td><td>两者结合</td><td>高维数据</td></tr>
+            <tr><td><strong>Dropout</strong></td><td>—</td><td>随机丢弃</td><td>神经网络专用</td></tr>
+            <tr><td><strong>Early Stopping</strong></td><td>—</td><td>防止过度训练</td><td>简单有效</td></tr>
+          </table>
+          <p>λ过大 → 正则化过强 → <em>欠拟合</em>（训练差+测试差）；λ=0 → 可能过拟合（训练好+测试差）。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 机器翻译评估指标</div>
+          <table class="compare-table">
+            <tr><th>指标</th><th>计算方式</th><th>主要用途</th></tr>
+            <tr><td><strong>BLEU</strong></td><td>n-gram 精确率</td><td class="highlight">机器翻译（最早最广泛）</td></tr>
+            <tr><td><strong>ROUGE-L</strong></td><td>最长公共子序列</td><td>摘要评估</td></tr>
+            <tr><td><strong>METEOR</strong></td><td>精确率+召回率+同义词</td><td>机器翻译</td></tr>
+            <tr><td><strong>CIDEr</strong></td><td>TF-IDF加权n-gram</td><td>图像描述</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== CH6 ==================== -->
+<div class="chapter" id="ch6">
+  <div class="chapter-header">
+    <div class="category-tag tag-dl">⚙️ 优化方法</div>
+    <h1>优化方法</h1>
+    <p class="desc">梯度下降变体、Adam、学习率策略、二阶优化、收敛性分析全覆盖。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">优化算法</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">📉</div>
+        <div class="info">
+          <div class="card-title">梯度下降全系列</div>
+          <div class="card-subtitle">真题：梯度下降权重更新公式？Adam是几阶？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 梯度下降更新规则</div>
+          <div class="formula-block">w = w - α · ∇L    # 标准梯度下降（α为学习率）
+
+# Adam（一阶优化）
+m = β₁m + (1-β₁)g        # 一阶矩（梯度均值）
+v = β₂v + (1-β₂)g²       # 二阶矩（梯度方差）
+m̂ = m/(1-β₁ᵗ)            # 偏差修正
+v̂ = v/(1-β₂ᵗ)
+w = w - α · m̂/（√v̂+ε）   # 自适应学习率</div>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ Adam 是一阶优化</div>
+            <p>Adam 使用梯度的"二阶矩"（梯度平方的期望）来自适应调整学习率，但这<strong>不是 Hessian 矩阵</strong>，Adam 仍是一阶优化方法。牛顿法、拟牛顿法才是真正的二阶方法。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 优化器对比</div>
+          <table class="compare-table">
+            <tr><th>优化器</th><th>阶次</th><th>自适应学习率</th><th>内存</th></tr>
+            <tr><td><strong>SGD</strong></td><td>一阶</td><td>❌</td><td>O(n)</td></tr>
+            <tr><td><strong>SGD+Momentum</strong></td><td>一阶</td><td>❌</td><td>O(n)</td></tr>
+            <tr><td><strong>AdaGrad</strong></td><td>一阶</td><td>✅（积累梯度）</td><td>O(n)</td></tr>
+            <tr><td><strong>RMSProp</strong></td><td>一阶</td><td>✅（移动平均）</td><td>O(n)</td></tr>
+            <tr><td><strong>Adam</strong></td><td>一阶</td><td>✅（动量+RMSProp）</td><td>O(n)</td></tr>
+            <tr><td><strong>牛顿法</strong></td><td>二阶</td><td>—</td><td>O(n²)</td></tr>
+            <tr><td><strong>L-BFGS</strong></td><td>拟二阶</td><td>—</td><td>O(mn)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(210,153,34,0.1)">🔄</div>
+        <div class="info">
+          <div class="card-title">Jacobi & Gauss-Seidel 迭代法</div>
+          <div class="card-subtitle">真题：两者核心区别？收敛条件？SOR 适用条件？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 核心区别</div>
+          <table class="compare-table">
+            <tr><th>方法</th><th>分量使用</th><th>可并行？</th><th>收敛速度</th></tr>
+            <tr><td><strong>Jacobi</strong></td><td>使用上一轮<em>所有</em>分量</td><td class="highlight">✅ 可并行</td><td>较慢</td></tr>
+            <tr><td><strong>Gauss-Seidel</strong></td><td>使用本轮已计算的<em>最新</em>分量</td><td>❌ 串行</td><td class="highlight">通常更快</td></tr>
+            <tr><td><strong>SOR</strong></td><td>Gauss-Seidel + 松弛因子ω</td><td>❌</td><td>最快（ω合适时）</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 收敛充分条件</div>
+          <ul>
+            <li><strong>严格对角占优</strong>：|aᵢᵢ| > Σⱼ≠ᵢ|aᵢⱼ| → Jacobi 和 Gauss-Seidel 均收敛</li>
+            <li><strong>对称正定矩阵</strong>：Gauss-Seidel 收敛（定理保证）</li>
+            <li><strong>SOR 收敛</strong>：需 ω∈(0,2)，最优 ω 可最快收敛</li>
+          </ul>
+          <div class="memory-block">
+            <div class="memory-title">🧠 提升迭代收敛的措施</div>
+            <p>有效措施：选择适当松弛因子（SOR）、改进迭代初始值。<br>无效措施：使用稀疏矩阵存储（存储优化，不影响收敛）、增加计算精度（影响精度不影响收敛方向）。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CH7 ==================== -->
+<div class="chapter" id="ch7">
+  <div class="chapter-header">
+    <div class="category-tag tag-math">🔢 线性代数</div>
+    <h1>线性代数</h1>
+    <p class="desc">矩阵分解、秩、正交矩阵、特征值、范数等核心考点及横向扩展。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">矩阵分解</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(188,140,255,0.1)">🧩</div>
+        <div class="info">
+          <div class="card-title">矩阵分解全系列</div>
+          <div class="card-subtitle">真题：SVD公式？哪种分解对正定矩阵唯一？各分解适用条件？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 矩阵分解汇总</div>
+          <table class="compare-table">
+            <tr><th>分解</th><th>形式</th><th>条件</th><th>唯一性</th></tr>
+            <tr><td><strong>SVD</strong></td><td>A = UΣVᵀ</td><td>任意矩阵</td><td>存在但不唯一（符号不定）</td></tr>
+            <tr><td><strong>特征值分解</strong></td><td>A = QΛQᵀ</td><td>方阵（可对角化）</td><td>不唯一</td></tr>
+            <tr><td><strong>LU 分解</strong></td><td>A = LU</td><td>方阵（通常）</td><td>不唯一（U可含主对角1）</td></tr>
+            <tr><td><strong>QR 分解</strong></td><td>A = QR</td><td>任意矩阵</td><td>不唯一</td></tr>
+            <tr><td class="highlight"><strong>Cholesky</strong></td><td>A = LLᵀ</td><td class="highlight">实对称正定矩阵</td><td class="highlight">✅ 唯一（L对角元正）</td></tr>
+          </table>
+          <div class="memory-block">
+            <div class="memory-title">🧠 记忆口诀</div>
+            <p>Cholesky = 正定矩阵的"专属分解"，唯一存在且高效（O(n³/3)，是LU的一半）。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> SVD 应用</div>
+          <ul>
+            <li><strong>推荐系统</strong>：矩阵分解协同过滤</li>
+            <li><strong>PCA</strong>：协方差矩阵的特征值分解 ≡ 数据矩阵的 SVD</li>
+            <li><strong>文本 LSA</strong>：词-文档矩阵奇异值分解</li>
+            <li><strong>图像压缩</strong>：保留前k个奇异值重构</li>
+            <li><strong>伪逆</strong>：A⁺ = VΣ⁺Uᵀ（处理奇异方程组）</li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 正交矩阵性质</div>
+          <p>设 A 为实正交矩阵（AᵀA = I）：</p>
+          <ul>
+            <li>Aᵀ = A⁻¹（转置等于逆矩阵）</li>
+            <li>det(A) = ±1</li>
+            <li>列向量两两正交且单位长度，一定<strong>线性无关</strong></li>
+            <li>保持向量长度（等距变换）：‖Ax‖ = ‖x‖</li>
+          </ul>
+          <div class="formula-block"># 考题：3×3正交矩阵，第一行(a,a,a)三个相等正数
+# AᵀA=I → 每行模为1 → 3a²=1 → a=1/√3 = √3/3</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(88,166,255,0.1)">📐</div>
+        <div class="info">
+          <div class="card-title">矩阵的秩</div>
+          <div class="card-subtitle">真题：rank(AB)的上界？初等行变换改变秩吗？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 秩的重要性质</div>
+          <ul>
+            <li>行秩 = 列秩 = 矩阵的秩（两者<strong>始终相等</strong>）</li>
+            <li><strong>初等行变换不改变矩阵的秩</strong>（行化简求秩的理论基础）</li>
+            <li>rank(AB) ≤ min(rank(A), rank(B))</li>
+            <li>若A或B为零矩阵，则 rank(AB) = 0</li>
+            <li>A可逆时，rank(A) = rank(A⁻¹) = n</li>
+          </ul>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 常见错误</div>
+            <p>rank(AB) ≥ rank(A) 是<strong>错误的</strong>（正确是 ≤）。矩阵的秩不等于行空间维数（行秩=列秩=秩，与哪个维数都相等）。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CH8 ==================== -->
+<div class="chapter" id="ch8">
+  <div class="chapter-header">
+    <div class="category-tag tag-stat">📈 概率统计</div>
+    <h1>概率论与统计</h1>
+    <p class="desc">常见分布、期望方差、大数定律、MLE、假设检验等核心考点。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">常见分布</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(247,120,186,0.1)">🎲</div>
+        <div class="info">
+          <div class="card-title">常见概率分布全系列</div>
+          <div class="card-subtitle">真题：均匀分布求E[X²]？伯努利分布性质？正态分布68-95-99.7？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 常见分布汇总</div>
+          <table class="compare-table">
+            <tr><th>分布</th><th>参数</th><th>期望</th><th>方差</th><th>备注</th></tr>
+            <tr><td><strong>伯努利 B(1,p)</strong></td><td>p</td><td>p</td><td>p(1-p)</td><td>单次0/1实验</td></tr>
+            <tr><td><strong>二项 B(n,p)</strong></td><td>n,p</td><td>np</td><td>np(1-p)</td><td>n次伯努利</td></tr>
+            <tr><td><strong>泊松 P(λ)</strong></td><td>λ</td><td>λ</td><td>λ</td><td>期望=方差</td></tr>
+            <tr><td><strong>均匀 U(a,b)</strong></td><td>a,b</td><td>(a+b)/2</td><td>(b-a)²/12</td><td>连续等概率</td></tr>
+            <tr><td><strong>正态 N(μ,σ²)</strong></td><td>μ,σ²</td><td>μ</td><td>σ²</td><td>68-95-99.7规则</td></tr>
+            <tr><td><strong>指数 Exp(λ)</strong></td><td>λ</td><td>1/λ</td><td>1/λ²</td><td>无记忆性</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label formula"><span class="badge">公式练习</span> 真题计算</div>
+          <div class="formula-block"># X~U(0,2)，求E[X²]
+E[X²] = ∫₀² x² · (1/2) dx = (1/2)[x³/3]₀² = (1/2)(8/3) = 4/3
+
+# X~N(0,0.01²)，P(-0.02 ≤ X ≤ 0.02) = P(-2σ ≤ X ≤ 2σ) ≈ 95%
+
+# X,Y 独立，P(X)=0.4, P(Y)=0.3 → P(X∩Y) = 0.4×0.3 = 0.12</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 泊松流特性（真题）</div>
+          <p>泊松流（泊松过程）的三大特征：</p>
+          <ul>
+            <li><strong>无后效性</strong>：未来与过去无关（马尔可夫性）</li>
+            <li><strong>平稳性</strong>：事件发生概率只依赖时间段长度，不依赖起始时间</li>
+            <li><strong>普通性</strong>：极短时间内最多发生一个事件</li>
+          </ul>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 非泊松流特征</div>
+            <p>"无偏性"是估计量的属性，"非负性"不是泊松流的标志性特征。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(57,208,216,0.1)">📊</div>
+        <div class="info">
+          <div class="card-title">统计推断：估计量 & 大数定律</div>
+          <div class="card-subtitle">真题：有效估计量的条件？强弱大数定律区别？马尔可夫不等式？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 估计量性质</div>
+          <table class="compare-table">
+            <tr><th>性质</th><th>定义</th></tr>
+            <tr><td><strong>无偏性</strong></td><td>E[θ̂] = θ（期望等于真值）</td></tr>
+            <tr><td class="highlight"><strong>有效性</strong></td><td class="highlight">同为无偏时，方差更小的更有效：D(θ̂₁) ≤ D(θ̂₂)</td></tr>
+            <tr><td><strong>相合性（一致性）</strong></td><td>n→∞时，θ̂ → θ（依概率）</td></tr>
+          </table>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 强弱大数定律</div>
+          <table class="compare-table">
+            <tr><th>定律</th><th>收敛方式</th><th>强度</th></tr>
+            <tr><td><strong>WLLN（弱大数）</strong></td><td>依概率收敛</td><td>弱</td></tr>
+            <tr><td><strong>SLLN（强大数）</strong></td><td>几乎处处收敛</td><td class="highlight">强（蕴含弱收敛）</td></tr>
+          </table>
+          <p>关键差别：<em>收敛方式</em>（不是独立性，不是样本容量，不是矩条件）。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 重要不等式</div>
+          <div class="formula-block"># 马尔可夫不等式（非负随机变量）
+P(X ≥ a) ≤ E[X] / a  （a > 0）
+→ 取a=1：P(X≥1) ≤ E[X]
+
+# 切比雪夫不等式
+P(|X-μ| ≥ k) ≤ σ²/k²
+
+# Cauchy-Schwarz 不等式
+|a·b| ≤ ‖a‖ · ‖b‖   （不是 ‖a‖ + ‖b‖）</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 极大似然估计（MLE）</div>
+          <p>MLE：找使已知观测数据出现概率<strong>最大</strong>的参数值。</p>
+          <ul>
+            <li>似然函数在<em>最大值处</em>生成已知观测的可能性最大</li>
+            <li>似然函数<strong>不一定</strong>是关于参数的凸函数</li>
+            <li>似然函数通常是关于参数的连续函数</li>
+            <li>对数似然 log L(θ)：转乘积为求和，求导更方便</li>
+          </ul>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 马尔可夫链</div>
+          <table class="compare-table">
+            <tr><th>性质</th><th>是否是马尔可夫链的基本特征</th></tr>
+            <tr><td>下一状态仅依赖当前状态（无记忆性）</td><td class="highlight">✅ 核心特征</td></tr>
+            <tr><td>状态转移矩阵是固定的</td><td class="highlight">✅ 时齐马尔可夫链</td></tr>
+            <tr><td>所有状态间可互达（遍历性）</td><td>❌ 非必须</td></tr>
+            <tr><td>状态空间可以是连续的</td><td>❌ 那是连续时间过程</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CH9 ==================== -->
+<div class="chapter" id="ch9">
+  <div class="chapter-header">
+    <div class="category-tag tag-algo">⚙️ 算法</div>
+    <h1>数据结构与算法</h1>
+    <p class="desc">二叉树、哈夫曼树、单调栈、二分查找等考点及横向扩展。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">树结构</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(210,153,34,0.1)">🌲</div>
+        <div class="info">
+          <div class="card-title">二叉树 & 哈夫曼树</div>
+          <div class="card-subtitle">真题：度为4哈夫曼树叶子50求非叶节点数？二叉树遍历还原结构？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 哈夫曼树节点计数</div>
+          <div class="formula-block"># 度为k的哈夫曼树，n0个叶子节点
+# 每次合并k个节点，减少k-1个
+# (n0-1) mod (k-1) 若不为0，需补虚叶子
+
+# 公式：非叶节点数 n1 = (n0'-1)/(k-1)
+# 其中n0'是补虚叶子后的叶子数
+
+# 例：k=4, n0=50
+# (50-1) mod (4-1) = 49 mod 3 = 1 ≠ 0
+# 需补 (3-1) = 2 个虚叶子，n0' = 52
+# n1 = (52-1)/3 = 51/3 = 17</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 二叉树节点关系</div>
+          <div class="formula-block"># 完全二叉树，n个节点
+# 度为0的叶子节点 n0
+# 度为1的节点 n1
+# 度为2的节点 n2
+# n0 = n2 + 1 （重要！）
+# n = n0 + n1 + n2</div>
+          <p>从前序+后序还原根节点：前序第一个是根，后序最后一个是根；前序第二个元素是根的子树根（配合后序确定结构）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">🔍</div>
+        <div class="info">
+          <div class="card-title">二分查找 & 单调栈</div>
+          <div class="card-subtitle">真题：二分查找找93需要几次比较？单调栈最小容量？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 二分查找</div>
+          <div class="formula-block">mid = floor((low + high) / 2)
+
+# 有序表 [4,6,40,44,54,67,74,82,89,93,100]（下标0-10）
+# 查找 93：
+# 第1次：mid=5，arr[5]=67 < 93，low=6
+# 第2次：mid=8，arr[8]=89 < 93，low=9
+# 第3次：mid=9，arr[9]=93 = 93，找到！共 3 次</div>
+          <p>有序数组长度 n 的二分查找最多比较 <em>⌊log₂n⌋ + 1</em> 次。</p>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 常用算法复杂度</div>
+          <table class="compare-table">
+            <tr><th>算法</th><th>时间</th><th>空间</th></tr>
+            <tr><td>二分查找</td><td>O(log n)</td><td>O(1)</td></tr>
+            <tr><td>快速排序（平均）</td><td>O(n log n)</td><td>O(log n)</td></tr>
+            <tr><td>归并排序</td><td>O(n log n)</td><td>O(n)</td></tr>
+            <tr><td>堆排序</td><td>O(n log n)</td><td>O(1)</td></tr>
+            <tr><td>BFS/DFS</td><td>O(V+E)</td><td>O(V)</td></tr>
+            <tr><td>并查集（路径压缩）</td><td>O(α(n))≈O(1)</td><td>O(n)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CH10 ==================== -->
+<div class="chapter" id="ch10">
+  <div class="chapter-header">
+    <div class="category-tag tag-math">🔬 数值计算</div>
+    <h1>数值计算</h1>
+    <p class="desc">病态问题、差分近似、量化、有效数字等数值计算核心考点。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">数值方法</div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(88,166,255,0.1)">🔬</div>
+        <div class="info">
+          <div class="card-title">病态问题 & 差分近似</div>
+          <div class="card-subtitle">真题：病态问题的表现？中心差分的误差阶？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 病态问题</div>
+          <p>病态（ill-conditioned）：输入的微小扰动导致输出显著变化。典型表现：线性方程组的系数矩阵行列式<strong>接近0</strong>（条件数大，矩阵接近奇异）。</p>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 不是病态的情况</div>
+            <p>数值积分步长大（截断误差，不是病态）；牛顿迭代初值不当（收敛问题，不是病态）；浮点舍入误差（精度问题，不是病态）。</p>
+          </div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 差分近似误差</div>
+          <div class="formula-block"># 前向差分（一阶精度 O(h)）
+f'(x) ≈ [f(x+h) - f(x)] / h
+
+# 后向差分（一阶精度 O(h)）
+f'(x) ≈ [f(x) - f(x-h)] / h
+
+# 中心差分（二阶精度 O(h²)）← 真题
+f'(x) ≈ [f(x+h) - f(x-h)] / (2h)
+# 二阶项在 Taylor 展开中相消，误差从h²开始</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label expand"><span class="badge">横向扩展</span> 有效数字 & 消去误差</div>
+          <ul>
+            <li><strong>有效数字</strong>：从第一个非零数字到最后一位可靠数字</li>
+            <li><strong>消去误差（Catastrophic Cancellation）</strong>：两个相近数相减，有效数字位数大幅降低</li>
+            <li>例：2.0050×10⁶ - 1.9950×10⁶ = 0.0100×10⁶，只剩2-3位有效数字</li>
+            <li>min-max 归一化对量级相近的数据会导致有效数字减少</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <div class="icon" style="background:rgba(63,185,80,0.1)">📦</div>
+        <div class="info">
+          <div class="card-title">模型量化 & 三次样条</div>
+          <div class="card-subtitle">真题：INT8量化流程？三次样条的连续性条件？</div>
+        </div>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="card-body">
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 对称 INT8 量化</div>
+          <div class="formula-block">s = max(|x|) / 127          # 缩放因子
+Q = clip(round(x/s), -127, 127)  # 量化
+x_deq = Q × s               # 反量化
+
+# per-sample（按行）: 对矩阵A每行单独计算s
+# per-channel（按列）: 对矩阵B每列单独计算s
+# 整数域矩阵乘法后反量化：Y = Q_A @ Q_B，再 × (s_A · s_B)</div>
+        </div>
+        <div class="kdivider"></div>
+        <div class="kitem">
+          <div class="kitem-label core"><span class="badge">核心考点</span> 三次样条插值</div>
+          <ul>
+            <li>在每个子区间用<strong>三次多项式</strong>近似</li>
+            <li>在节点处保证函数值、<strong>一阶导数和二阶导数都连续</strong>（C²连续）</li>
+            <li>插值函数<strong>通过所有给定数据点</strong></li>
+            <li>相比高次多项式插值，能<strong>避免 Runge 现象</strong>（端点振荡）</li>
+          </ul>
+          <div class="trap-block">
+            <div class="trap-title">⚠️ 错误说法</div>
+            <p>"三次样条在节点处二阶导数不连续"——这是<strong>错误的</strong>，三次样条的核心优势正是保证了二阶导数的连续性（C²）。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end layout -->
+
+<script>
+function toggleCard(head) {
+  const card = head.parentElement;
+  card.classList.toggle('open');
+}
+
+function showChapter(id) {
+  document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const titles = {
+    ch1: 'Transformer & 注意力机制',
+    ch2: '大语言模型 & RLHF',
+    ch3: '神经网络基础',
+    ch4: '经典 ML 算法',
+    ch5: '模型评估与损失函数',
+    ch6: '优化方法',
+    ch7: '线性代数',
+    ch8: '概率论与统计',
+    ch9: '数据结构与算法',
+    ch10: '数值计算'
+  };
+  document.getElementById('topBarTitle').textContent = titles[id] || '';
+  window.scrollTo(0, 0);
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('searchInput').value = '';
+}
+
+function doSearch(query) {
+  const q = query.trim().toLowerCase();
+  const sr = document.getElementById('searchResults');
+  const sc = document.getElementById('searchContent');
+
+  if (!q) {
+    sr.style.display = 'none';
+    document.querySelectorAll('.chapter').forEach(c => {
+      if (c.id === 'ch1') c.classList.add('active');
+      else c.classList.remove('active');
+    });
+    return;
+  }
+
+  document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'));
+  sr.style.display = 'block';
+
+  // Search through all cards
+  const cards = document.querySelectorAll('.card');
+  let results = [];
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    if (text.includes(q)) {
+      const titleEl = card.querySelector('.card-title');
+      const subEl = card.querySelector('.card-subtitle');
+      results.push({
+        title: titleEl ? titleEl.textContent : '未知',
+        sub: subEl ? subEl.textContent : '',
+        card: card
+      });
+    }
+  });
+
+  if (results.length === 0) {
+    sc.innerHTML = `<div class="no-result"><div class="emoji">🔍</div><p>没有找到"${query}"相关内容</p></div>`;
+    return;
+  }
+
+  sc.innerHTML = `<div style="color:var(--text2);font-size:13px;margin-bottom:20px">找到 <b style="color:var(--text)">${results.length}</b> 个相关知识点</div>` +
+    results.map(r => `
+      <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="scrollToCard(this, ${Array.from(document.querySelectorAll('.card')).indexOf(r.card)})">
+        <div class="card-head" style="cursor:pointer">
+          <div class="icon" style="background:rgba(88,166,255,0.1)">🔍</div>
+          <div class="info">
+            <div class="card-title">${highlight(r.title, q)}</div>
+            <div class="card-subtitle">${highlight(r.sub, q)}</div>
+          </div>
+          <span style="font-size:11px;color:var(--accent);padding:3px 8px;background:rgba(88,166,255,0.1);border-radius:4px">查看 →</span>
+        </div>
+      </div>`).join('');
+}
+
+function highlight(text, q) {
+  const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  return text.replace(re, m => `<span class="highlight">${m}</span>`);
+}
+
+function scrollToCard(el, idx) {
+  const cards = document.querySelectorAll('.card');
+  if (cards[idx]) {
+    const chapterId = cards[idx].closest('.chapter').id;
+    showChapter(chapterId);
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      const chapters = ['ch1','ch2','ch3','ch4','ch5','ch6','ch7','ch8','ch9','ch10'];
+      const itemChapters = Array.from(document.querySelectorAll('.nav-item')).map((_, j) => chapters[j] || '');
+    });
+    setTimeout(() => {
+      cards[idx].classList.add('open');
+      cards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+}
+
+// Initialize - open all cards in ch1
+document.querySelectorAll('#ch1 .card').forEach(c => c.classList.add('open'));
+</script>
+</body>
+</html>

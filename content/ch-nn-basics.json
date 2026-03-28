@@ -1,0 +1,105 @@
+{
+  "id": "ch-nn-basics",
+  "title": "神经网络基础",
+  "tag": "dl",
+  "tagLabel": "深度学习基础",
+  "desc": "把反向传播、激活函数、BatchNorm、Dropout、权重初始化讲到能算、能说、能手撕代码。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "backprop",
+      "title": "反向传播（Backpropagation）",
+      "subtitle": "真题：为什么大模型不可能手工求梯度？链式法则到底怎么落地？",
+      "icon": "🔁",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先有痛点，再绑定术语", "text": "当参数只有 3 个时，你还可以一个个手算梯度；当参数是百万、十亿级时，这件事立刻变成不可能。把“输出误差如何高效分摊回每一层参数”这件事系统化，就是**反向传播**；它真正依赖的数学工具，就是**链式法则**。"},
+        {"type": "formula", "layer": 1, "content": "$$\\frac{\\partial L}{\\partial W_1}=\\frac{\\partial L}{\\partial z_2}\\frac{\\partial z_2}{\\partial a_1}\\frac{\\partial a_1}{\\partial z_1}\\frac{\\partial z_1}{\\partial W_1}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "def", "badge": "变量解释", "labelTitle": "其中", "text": "$L$ 是损失，$z_1=W_1x+b_1$，$a_1=\\mathrm{ReLU}(z_1)$，$z_2=W_2a_1+b_2$。反向传播不是“发明新导数”，而是把局部导数按计算图逆序相乘。"},
+        {"type": "kitem", "layer": 1, "labelType": "warn", "badge": "反事实", "labelTitle": "如果不这样做会怎样", "text": "如果对每个参数都单独做数值微分，成本会随参数个数线性爆炸；模型越大，训练越不可能发生。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "2 层网络手算一遍", "text": "取 $x=[1,2]^T$，$W_1=\\begin{bmatrix}1&0\\\\0&1\\end{bmatrix}$，$b_1=[0,0]^T$，所以 $z_1=[1,2]^T$，$a_1=[1,2]^T$。再取 $W_2=[2,-1]$，目标 $y=1$，则 $z_2=2\\cdot1-1\\cdot2=0$，$L=\\frac12(z_2-y)^2=0.5$。于是 $\\frac{\\partial L}{\\partial z_2}=z_2-y=-1$，$\\frac{\\partial L}{\\partial W_2}=[-1,-2]$，$\\frac{\\partial L}{\\partial a_1}=W_2^T(-1)=[-2,1]^T$。因为两个神经元都在 ReLU 正区，局部导数都等于 1，所以 $\\frac{\\partial L}{\\partial z_1}=[-2,1]^T$，最终 $\\frac{\\partial L}{\\partial W_1}=\\begin{bmatrix}-2&-4\\\\1&2\\end{bmatrix}$。这就是“上游梯度 × 本地导数”的机械执行。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "反向传播快，不是因为它少算了导数，而是因为共享了中间结果。一个参数不会为自己单独跑一遍网络，它只是复用同一条误差信号。"},
+        {"type": "table", "layer": 2, "headers": ["求梯度方式", "怎么做", "代价", "结论"], "rows": [["数值微分", "每个参数各扰动一次", "参数越多越慢", "调试用"], ["反向传播", "一次前向 + 一次反向", "与参数共享计算图", "训练必备"]]},
+        {"type": "kitem", "layer": 3, "labelType": "interview", "badge": "面试视角", "labelTitle": "你要怎么答", "text": "先说结论：反向传播是链式法则在计算图上的工程化。再补一句：它把误差从输出层逆向传回去，每层只管自己的局部导数，所以大模型也能高效训练。若被追问梯度检验，就回答“用中心差分只做调试，不做正式训练”。"},
+        {"type": "code", "layer": 3, "title": "从零实现：两层网络反向传播", "content": "import numpy as np\n\ndef relu(x):\n    return np.maximum(x, 0)\n\nx = np.array([1.0, 2.0])\nW1 = np.array([[1.0, 0.0], [0.0, 1.0]])\nW2 = np.array([[2.0, -1.0]])\ny = np.array([1.0])\n\nz1 = W1 @ x                    # 先存中间值，因为反传要重复用\na1 = relu(z1)                  # 激活后的值决定下一层输入\nz2 = W2 @ a1                   # 最后一层先得到预测\nloss = 0.5 * np.sum((z2 - y) ** 2)\n\ndz2 = z2 - y                   # MSE 对输出的导数最直接，先从终点开始\ndW2 = dz2.reshape(-1, 1) @ a1.reshape(1, -1)  # 外积是因为每个权重都要分到对应输入\nda1 = W2.T @ dz2               # 先把误差传回隐藏层\ndz1 = da1.flatten() * (z1 > 0) # ReLU 正区保留梯度，负区截断\ndW1 = dz1.reshape(-1, 1) @ x.reshape(1, -1)   # 再把输入责任分摊给第一层权重\n\nprint(loss, dW2, dW1, sep='\\n')"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：反向传播为什么能训练大模型？\n\n答：因为它把链式法则写成了计算图上的逆序传播，所有参数共享同一轮前向得到的中间结果，所以一次前向加一次反向就能得到全部梯度。\n\n面试官追问：数值微分为什么不能替代它？\n\n答：数值微分要对每个参数单独扰动，复杂度随参数量线性增长，只适合做梯度检验，不适合正式训练。"}
+      ]
+    },
+    {
+      "id": "activation-functions",
+      "title": "激活函数：ReLU / GELU / Sigmoid",
+      "subtitle": "真题：为什么堆很多线性层没有意义？Transformer 为什么偏爱 GELU？",
+      "icon": "⚡",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先有痛点，再绑定术语", "text": "如果你把三层线性层一层层叠起来，最后会发现它们只是被压缩成一个更大的线性变换，表达力几乎没升级。让网络真正获得“弯曲决策边界”的部件，就叫**激活函数**；面试里最常比较的是 **ReLU**、**GELU** 和 **Sigmoid**。"},
+        {"type": "formula", "layer": 1, "content": "$$\\mathrm{ReLU}(x)=\\max(0,x),\\qquad \\mathrm{Sigmoid}(x)=\\frac{1}{1+e^{-x}},\\qquad \\mathrm{GELU}(x)=x\\Phi(x)$$"},
+        {"type": "kitem", "layer": 1, "labelType": "def", "badge": "变量解释", "labelTitle": "其中", "text": "$x$ 是神经元的线性输出，$\\Phi(x)$ 是标准正态分布的 CDF。ReLU 是硬截断，Sigmoid 是压到 $(0,1)$，GELU 是按输入大小做软门控。"},
+        {"type": "kitem", "layer": 1, "labelType": "warn", "badge": "反事实", "labelTitle": "如果不这样做会怎样", "text": "如果没有激活函数，多层网络始终等价于一个线性映射，深度白堆了。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "先看“线性层塌缩”，再看三种激活", "text": "设第一层输出 $h=2x$，第二层输出 $y=3h$，那整体就是 $y=6x$，仍是一条直线，所以“叠线性层”不会产生新形状。现在取输入 $x\\in\\{-2,0.5,2\\}$：ReLU 输出为 $[0,0.5,2]$，会把负区直接砍掉；Sigmoid 输出约为 $[0.12,0.62,0.88]$，两端逐渐饱和；GELU 输出约为 $[-0.05,0.35,1.95]$，负值不全砍掉，0 附近也更平滑。再看导数：Sigmoid 最大只有 0.25，链式相乘很容易把深层梯度压没；ReLU 在正区导数是 1；GELU 没有硬拐点，所以常被 Transformer 的 FFN 采用。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "ReLU 不是“完美解决梯度消失”，它只是让正区梯度不衰减；一旦神经元长期落在负区，仍会出现 Dead ReLU。"},
+        {"type": "table", "layer": 2, "headers": ["函数", "导数特征", "优点", "风险"], "rows": [["Sigmoid", "最大 0.25", "适合概率输出", "深层易梯度消失"], ["ReLU", "正区为 1", "便宜、训练快", "负区会死亡"], ["GELU", "平滑软门控", "大模型训练更稳", "计算稍贵"]]},
+        {"type": "kitem", "layer": 3, "labelType": "interview", "badge": "面试视角", "labelTitle": "你要怎么答", "text": "先回答“激活函数给网络引入非线性，否则多层线性层会塌缩成一层”。再比较：Sigmoid 常留在输出层，ReLU 适合传统 MLP/CNN，GELU 因为平滑和软门控特性更常见于 Transformer。若被追问 Transformer 为什么不用纯 ReLU，就补一句“GELU 在 0 附近更平滑，配合归一化后的输入更稳”。"},
+        {"type": "code", "layer": 3, "title": "从零实现：三种激活函数", "content": "import numpy as np\n\ndef sigmoid(x):\n    return 1.0 / (1.0 + np.exp(-x))      # 用指数把输出压到 0 到 1，适合概率语义\n\ndef relu(x):\n    return np.maximum(x, 0.0)            # 直接砍掉负区，换来便宜且稳定的正区梯度\n\ndef gelu(x):\n    c = np.sqrt(2.0 / np.pi)\n    return 0.5 * x * (1 + np.tanh(c * (x + 0.044715 * x**3)))\n    # 用 tanh 近似是因为精确 CDF 太慢，训练里更看重平滑门控和效率平衡\n\nx = np.array([-2.0, 0.5, 2.0])\nprint(sigmoid(x))\nprint(relu(x))\nprint(gelu(x))"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么多层线性网络没有真正的深度优势？\n\n答：因为线性变换的复合仍然是线性变换，所以多层线性层可以合并成一层矩阵，表达能力没有本质提升。\n\n面试官追问：为什么 Transformer 常用 GELU 而不是 ReLU？\n\n答：GELU 是平滑软门控，0 附近不会像 ReLU 那样硬截断，和归一化后的输入分布更匹配，训练通常更稳定。"}
+      ]
+    },
+    {
+      "id": "batch-norm",
+      "title": "BatchNorm（批量归一化）",
+      "subtitle": "真题：为什么深层网络会不断“重新适应分布”？BN 在训练和推理时有什么差别？",
+      "icon": "📊",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先有痛点，再绑定术语", "text": "深层网络训练时，下游层刚适应了上一层的输出分布，上游参数一更新，输入分布又漂了，于是下游层得重新适应一遍。把每个 mini-batch 的激活先拉回稳定尺度，再交给后续层，这个机制就叫 **BatchNorm**。"},
+        {"type": "formula", "layer": 1, "content": "$$\\hat{x}_i=\\frac{x_i-\\mu_B}{\\sqrt{\\sigma_B^2+\\varepsilon}},\\qquad y_i=\\gamma \\hat{x}_i+\\beta$$"},
+        {"type": "kitem", "layer": 1, "labelType": "def", "badge": "变量解释", "labelTitle": "其中", "text": "$x_i$ 是 batch 中某个样本在某一特征维上的值，$\\mu_B$ 和 $\\sigma_B^2$ 是当前 batch 的均值与方差，$\\varepsilon$ 防止除零，$\\gamma,\\beta$ 是可学习的缩放与平移。"},
+        {"type": "kitem", "layer": 1, "labelType": "warn", "badge": "反事实", "labelTitle": "如果不这样做会怎样", "text": "如果激活分布层层漂移，学习率就不敢开大，深层训练会越来越慢、越来越不稳。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "在一个超小 batch 上算均值和方差", "text": "只看某一维特征，取一个 batch 的值为 $[2,4]$。则均值 $\\mu_B=(2+4)/2=3$，方差 $\\sigma_B^2=((2-3)^2+(4-3)^2)/2=1$，归一化后得到 $[-1,1]$。如果再设 $\\gamma=2$、$\\beta=0.5$，最终输出就是 $[-1.5,2.5]$。这里的关键不是“永远让均值为 0、方差为 1”，而是先把分布稳定住，再让模型自己学会合适的尺度。训练时用当前 batch 的统计量；推理时不能再看测试 batch，所以要改用训练期累计的 running mean / running var。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "BN 不是纯粹的“数值修正器”，它还会引入 batch 级噪声，所以常带一点正则化味道；但 batch 太小的时候，这种噪声会从“有益”变成“不稳定”。"},
+        {"type": "table", "layer": 2, "headers": ["方法", "统计量来自哪里", "训练时要求", "典型场景"], "rows": [["BatchNorm", "当前 batch", "batch 不能太小", "CNN/图像任务"], ["LayerNorm", "单个样本自身", "batch=1 也能用", "Transformer/NLP"], ["GroupNorm", "样本内部的分组", "小 batch 更稳", "检测分割"]]},
+        {"type": "kitem", "layer": 3, "labelType": "interview", "badge": "面试视角", "labelTitle": "你要怎么答", "text": "第一句先说：BN 用 batch 统计量标准化激活，缓解深层训练时的分布漂移。第二句补上训练/推理差异：训练看当前 batch，推理看 running statistics。若面试官追问 Transformer 为什么少用 BN，就回答“因为 NLP 常是小 batch、变长序列，自回归推理还会 batch=1，所以 LayerNorm 更自然”。"},
+        {"type": "code", "layer": 3, "title": "从零实现：BatchNorm 前向", "content": "import numpy as np\n\ndef batch_norm_forward(x, gamma, beta, eps=1e-5):\n    mu = x.mean(axis=0)                    # 按 batch 求均值，因为 BN 就是在同一批样本上定标尺\n    var = x.var(axis=0)                    # 方差描述这一维有多分散，后面要用来缩放\n    x_hat = (x - mu) / np.sqrt(var + eps) # 先标准化，目的是稳住分布而不是改变语义\n    y = gamma * x_hat + beta              # 再把表达能力交还给可学习参数\n    return y, mu, var\n\nx = np.array([[2.0], [4.0]])\ngamma = np.array([2.0])\nbeta = np.array([0.5])\nprint(batch_norm_forward(x, gamma, beta)[0])"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：BatchNorm 解决的核心问题是什么？\n\n答：它用 mini-batch 的统计量把激活先标准化，减轻深层训练时输入分布不断漂移带来的优化困难，让训练更稳、学习率可以更大。\n\n面试官追问：为什么 BN 在推理时不能继续用当前 batch 的均值方差？\n\n答：因为推理时经常 batch 很小甚至只有 1 条样本，当前 batch 统计量既不稳定也不一致，所以要改用训练期累计的 running mean 和 running var。"}
+      ]
+    },
+    {
+      "id": "dropout",
+      "title": "Dropout：防止神经元串通偷懒",
+      "subtitle": "真题：为什么 Dropout 训练时随机置零，推理时却要关闭？",
+      "icon": "🎲",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先有痛点，再绑定术语", "text": "如果某几个神经元总是一起出现、互相依赖，网络就会学出“专科搭子”：少了其中一个，整体性能就塌。训练时故意随机掐掉一部分神经元、逼剩下的人顶上，这个机制就叫 **Dropout**。"},
+        {"type": "formula", "layer": 1, "content": "$$\\tilde{h}=\\frac{m \\odot h}{1-p},\\qquad m_j\\sim \\mathrm{Bernoulli}(1-p)$$"},
+        {"type": "kitem", "layer": 1, "labelType": "def", "badge": "变量解释", "labelTitle": "其中", "text": "$h$ 是原始激活，$m$ 是 0/1 掩码，$p$ 是丢弃概率，$\\odot$ 是按元素相乘。除以 $1-p$ 是为了让训练时的期望输出和推理时对齐。"},
+        {"type": "kitem", "layer": 1, "labelType": "warn", "badge": "反事实", "labelTitle": "如果不这样做会怎样", "text": "如果只随机置零却不做缩放，训练期和推理期的激活尺度就不一致，模型上线后会突然“换了一套数值世界”。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "4 个神经元的随机失活", "text": "设某层激活 $h=[2,1,3,4]$，丢弃概率 $p=0.5$，一次采样得到掩码 $m=[1,0,1,0]$。则 inverted dropout 的输出为 $\\tilde{h}=m\\odot h/0.5=[4,0,6,0]$。注意它不是“把信息砍半”，而是“保留一半、再把保留下来的那一半放大”，这样期望输出仍等于原始激活。它逼网络不要过度依赖任何单个神经元，于是 co-adaptation 被打散。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "Dropout 不是越大越好。丢弃太狠时，网络不是更鲁棒，而是根本学不动；尤其和 BatchNorm 混用时，还可能把统计量搅乱。"},
+        {"type": "table", "layer": 2, "headers": ["方案", "训练时", "推理时", "工程结论"], "rows": [["朴素 Dropout", "只置零", "还要额外缩放", "麻烦"], ["Inverted Dropout", "置零后除以 1-p", "直接关闭 Dropout", "主流实现"], ["不用 Dropout", "无随机扰动", "一致", "易过拟合"]]},
+        {"type": "kitem", "layer": 3, "labelType": "interview", "badge": "面试视角", "labelTitle": "你要怎么答", "text": "先说本质：Dropout 是训练期的随机失活正则化，用来打散神经元共适应。再说工程细节：主流实现是 inverted dropout，所以训练时先按 $1-p$ 缩放，推理时直接关闭即可。若被追问 Transformer 里的 dropout，就回答“通常比 MLP 更轻，常见 0.1 左右”。"},
+        {"type": "code", "layer": 3, "title": "从零实现：Inverted Dropout", "content": "import numpy as np\n\ndef dropout_forward(h, p=0.5, training=True):\n    if not training or p == 0.0:\n        return h                            # 推理时关闭，是为了让线上行为确定且稳定\n    keep = 1.0 - p\n    mask = (np.random.rand(*h.shape) < keep).astype(h.dtype)\n    return mask * h / keep                  # 训练时先补偿缩放，保证期望和推理对齐\n\nh = np.array([2.0, 1.0, 3.0, 4.0])\nnp.random.seed(0)\nprint(dropout_forward(h, p=0.5, training=True))\nprint(dropout_forward(h, p=0.5, training=False))"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：Dropout 为什么能缓解过拟合？\n\n答：因为它在训练时随机屏蔽部分神经元，迫使网络不要依赖固定的“搭子”组合，而要学出更分散、更鲁棒的特征表示。\n\n面试官追问：为什么推理时要关闭 Dropout？\n\n答：因为推理期我们要稳定、确定的输出；而 inverted dropout 已经在训练时做过期望补偿，所以推理时直接关闭最自然。"}
+      ]
+    },
+    {
+      "id": "weight-init",
+      "title": "权重初始化：Xavier / He",
+      "subtitle": "真题：为什么所有权重不能设成一样？Xavier 和 He 分别补偿什么？",
+      "icon": "🎯",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "先有痛点，再绑定术语", "text": "如果把一层里的所有权重都初始化成同一个数，每个神经元看到的输入、产生的输出、收到的梯度都会一模一样，于是整层等价于只有一个神经元。专门为“既打破对称性、又让方差别乱飞”设计的策略，就是**权重初始化**；最常考的是 **Xavier 初始化** 和 **He 初始化**。"},
+        {"type": "formula", "layer": 1, "content": "$$\\operatorname{Var}(W)=\\frac{2}{n_{in}+n_{out}} \\; (\\text{Xavier}),\\qquad \\operatorname{Var}(W)=\\frac{2}{n_{in}} \\; (\\text{He})$$"},
+        {"type": "kitem", "layer": 1, "labelType": "def", "badge": "变量解释", "labelTitle": "其中", "text": "$n_{in}$ 是输入维度，$n_{out}$ 是输出维度。Xavier 主要给近线性或 Tanh 类激活用；He 额外补偿了 ReLU 会砍掉一半激活这件事。"},
+        {"type": "kitem", "layer": 1, "labelType": "warn", "badge": "反事实", "labelTitle": "如果不这样做会怎样", "text": "如果初始化太大，激活和梯度会层层放大；如果太小，又会层层缩没；如果全相等，还会直接触发对称性失败。"},
+        {"type": "divider"},
+        {"type": "kitem", "layer": 2, "labelType": "formula", "badge": "玩具模型", "labelTitle": "常数初始化为什么挂掉，He 为什么比 Xavier 更适合 ReLU", "text": "先看对称性：设两个神经元的初始权重都为 $[0.1,0.1]$，输入也是同一个 $x$，那它们前向输出完全相同，反向梯度也完全相同，更新后仍旧相同，于是这两个神经元永远学不到不同特征。再看方差：若一层有 $n_{in}=n_{out}=4$，则 Xavier 给出 $\\mathrm{Var}(W)=2/(4+4)=0.25$，He 给出 $\\mathrm{Var}(W)=2/4=0.5$。因为 ReLU 会把大约一半激活清零，方差天然少一半，所以 He 把初始方差加倍，正好做补偿；这就是为什么在 ReLU 网络里，He 往往比 Xavier 更稳。"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "Xavier 不是“过时”，而是有适用前提。它在 Tanh 或近线性激活上很好；问题只在于你把它拿去喂 ReLU 时，方差会一层层缩水。"},
+        {"type": "table", "layer": 2, "headers": ["初始化", "解决什么问题", "更适合谁", "典型风险"], "rows": [["常数初始化", "几乎什么都没解决", "没人", "对称性失败"], ["Xavier", "稳住前后层方差", "Tanh/线性", "ReLU 下易衰减"], ["He", "补偿 ReLU 截断", "ReLU/Leaky ReLU", "给 Tanh 可能偏大"]]},
+        {"type": "kitem", "layer": 3, "labelType": "interview", "badge": "面试视角", "labelTitle": "你要怎么答", "text": "第一句先答“初始化的目标是打破对称性，同时让激活和梯度的方差别在深层网络里爆炸或消失”。第二句再分场景：Tanh 常说 Xavier，ReLU 常说 He。若被追问 bias 能不能全零，就回答“可以，因为真正负责打破对称性的是权重矩阵”。"},
+        {"type": "code", "layer": 3, "title": "从零实现：Xavier 与 He 初始化", "content": "import numpy as np\n\ndef xavier_init(n_in, n_out):\n    std = np.sqrt(2.0 / (n_in + n_out))    # 兼顾前向和反向的方差平衡\n    return np.random.randn(n_out, n_in) * std\n\ndef he_init(n_in, n_out):\n    std = np.sqrt(2.0 / n_in)              # 额外乘 2，是为了补偿 ReLU 常砍掉半数激活\n    return np.random.randn(n_out, n_in) * std\n\nprint(xavier_init(4, 4).var())\nprint(he_init(4, 4).var())"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么不能把一层神经元的权重都初始化成一样？\n\n答：因为这样会让它们前向输出和反向梯度始终完全相同，整层无法分工学习不同特征，这就是对称性失败。\n\n面试官追问：He 初始化相比 Xavier 多补偿了什么？\n\n答：它补偿了 ReLU 会把大约一半激活截成 0，因而把初始方差设为 $2/n_{in}$，避免信号在深层里快速衰减。"}
+      ]
+    }
+  ]
+}

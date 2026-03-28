@@ -1,0 +1,150 @@
+{
+  "id": "ch-ml-tree-methods",
+  "title": "树模型 & Boosting",
+  "tag": "ml",
+  "tagLabel": "机器学习",
+  "desc": "聚焦决策树、随机森林和 XGBoost。先建立分裂与集成直觉，再解释为什么树模型在表格数据面试里总是高频。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "decision-tree",
+      "title": "决策树 & 随机森林",
+      "subtitle": "真题：信息增益、基尼系数、Bagging 各在解决什么问题？",
+      "icon": "🌲",
+      "iconBg": "rgba(16,185,129,0.12)",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "信贷初筛的痛点",
+          "text": "你要在 1 分钟内初筛 10 个贷款申请人，最快的问法不是列一个长公式，而是连续问几个是非题，比如“逾期次数 > 0 吗”“月收入 > 2 万吗”。把这种 if-else 决策流程学出来，就是决策树。它每次都在找一个分裂，让子节点更纯。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$H(S) = -\\sum_k p_k \\log_2 p_k, \\qquad G(S) = 1 - \\sum_k p_k^2$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "10 个样本手算纯度",
+          "text": "父节点里有 10 人，6 人批准，4 人拒绝，所以基尼不纯度是 $1-0.6^2-0.4^2=0.48$。若按“是否有逾期”分裂，左子节点 4 批准 0 拒绝，右子节点 2 批准 4 拒绝，则加权基尼变成 $\\frac{4}{10}\\times 0 + \\frac{6}{10}\\times (1-(\\frac{2}{6})^2-(\\frac{4}{6})^2) \\approx 0.27$。不纯度明显下降，所以这是个好分裂。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "信息增益和基尼差在哪",
+          "text": "两者都在衡量纯度，只是曲线不同。二分类下若 $p=0.5$，熵是 1，基尼是 0.5，都会认为“最乱”。真正的工程差别是，基尼没有对数，算得更快，所以 CART 和 sklearn 默认更偏爱它。信息增益还有一个老问题，容易偏爱取值很多的特征，比如用户 ID，这时要用增益率修正。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "expand",
+          "badge": "随机森林",
+          "labelTitle": "为什么多棵树比单棵树稳",
+          "text": "单棵树很像一个背答案的实习生，问到没见过的样本时波动很大。随机森林做两件事。第一，有放回抽样，每棵树只看一部分样本，平均每棵树只会见到约 63.2% 的不同样本，剩下约 36.8% 成为 OOB 验证样本。第二，每次分裂只从部分特征里选最优，这会降低树和树之间的相关性。相关性越低，平均后的方差越小。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\mathrm{Var}(\\bar{X}) = \\rho \\sigma^2 + \\frac{1-\\rho}{B}\\sigma^2$$"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 常见误区",
+          "content": "随机森林不是靠把每棵树都剪得很弱才有效，它恰恰常常使用高方差的深树，再靠平均来降方差。所以它擅长治高方差，不擅长治高偏差。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：随机森林为什么通常比单棵决策树泛化更好？\n\n答：单棵树高方差，容易记住训练集细节。随机森林通过 bootstrap 抽样和特征随机化训练多棵低相关的树，再把结果平均，从而显著降低方差，所以泛化更稳。"
+        }
+      ]
+    },
+    {
+      "id": "xgboost",
+      "title": "梯度提升 & XGBoost",
+      "subtitle": "真题：XGBoost 和随机森林有什么本质区别，为什么要用二阶展开？",
+      "icon": "🚀",
+      "iconBg": "rgba(239,68,68,0.12)",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "核心考点",
+          "labelTitle": "残差补锅的痛点",
+          "text": "假设第一棵树把 3 套房全都预测成 100 万，但真实价格是 120、90、150 万。你一眼就能看出它没学好，因为残差分别是 +20、-10、+50。Boosting 的想法不是再独立训一棵新树，而是让下一棵树专门去补这 3 个残差。XGBoost 就是把这个残差补锅流程做到了又快又稳。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\hat{y}_i^{(t)} = \\hat{y}_i^{(t-1)} + f_t(\\mathbf{x}_i)$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "玩具模型",
+          "labelTitle": "3 个残差怎么看",
+          "text": "若第二棵树对这 3 个样本输出 +15、-5、+30，那么新预测会从 100 变成 115、95、130，残差缩小为 +5、-5、+20。你能看到它不是在重新学一遍全部规律，而是在沿着前一轮的错误继续修正。"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "推导",
+          "labelTitle": "为什么 XGBoost 要看二阶信息",
+          "text": "普通 GBDT 主要看一阶梯度，像是在问“往哪边走能降损失”。XGBoost 再多看一个 Hessian，等于同时问“这个方向的曲率有多陡”。于是它能直接算出一个叶子该给多大更新，而不是只凭固定学习率试探。"
+        },
+        {
+          "type": "formula",
+          "layer": 2,
+          "content": "$$\\mathcal{L}^{(t)} \\approx \\sum_{i=1}^{n}\\left[g_i f_t(\\mathbf{x}_i) + \\frac{1}{2}h_i f_t^2(\\mathbf{x}_i)\\right] + \\Omega(f), \\qquad w_j^* = -\\frac{G_j}{H_j+\\lambda}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "formula",
+          "badge": "玩具模型",
+          "labelTitle": "叶子值为什么能闭式求解",
+          "text": "假设某个叶子里 3 个样本的一阶梯度和是 $G_j=12$，二阶梯度和是 $H_j=6$，正则项 $\\lambda=1$。那最优叶子值直接就是 $w_j^*=-\\frac{12}{7}\\approx -1.71$。这就是二阶展开的工程价值，它把“这片叶子该修多少”变成了可直接计算的数。"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "expand",
+          "badge": "对比",
+          "labelTitle": "它和随机森林到底差在哪",
+          "text": "随机森林是并行的 Bagging，核心目标是降方差。XGBoost 是串行的 Boosting，核心目标是降偏差。前者多棵树彼此独立，后者每棵树都盯着前面没学好的地方继续修。所以随机森林一般更稳更省心，XGBoost 通常上限更高，但更需要学习率、树深和 early stopping 去压过拟合。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "树越多，随机森林通常不会因为“多平均几次”而更容易过拟合。Boosting 不一样，树越多就越可能把噪声也当成残差继续修掉，所以它必须更警惕过拟合。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：XGBoost 相比普通 GBDT 的关键改进是什么？\n\n答：核心是二阶泰勒展开。它同时使用一阶梯度和二阶 Hessian，所以叶子值能写成闭式解，分裂增益也能直接计算；再加上显式正则化和工程优化，训练通常更快也更稳。"
+        }
+      ]
+    }
+  ]
+}

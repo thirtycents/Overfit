@@ -1,0 +1,86 @@
+{
+  "id": "ch-transformer-inference",
+  "title": "LLM 推理优化：KV Cache / 投机解码 / 量化",
+  "tag": "llm",
+  "tagLabel": "大模型核心",
+  "desc": "把推理拆成真正的工程痛点：为什么 token-by-token 太慢、为什么显存总是不够、为什么同一个优化在 Prefill 和 Decode 阶段效果完全不同。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "kv-cache",
+      "title": "KV Cache：别再为旧 token 重算一遍",
+      "subtitle": "真题：为什么自回归推理不用 KV Cache 会越来越慢？",
+      "icon": "💾",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "是什么，解决什么问题", "text": "痛点先说清：生成第 $t$ 个 token 时，如果你把前 $t-1$ 个 token 的 Key 和 Value 重新算一遍，延迟会随着上下文长度一起变长。把旧 token 的 $K,V$ 存下来并在下一步直接复用，这个缓存就叫 KV Cache。它解决的是自回归推理里“同一段前缀被反复重算”的浪费。反事实：没有 KV Cache，长上下文聊天会出现越聊越慢的体感，因为每一步都在重复做昨天已经做过的投影。"},
+        {"type": "formula", "layer": 1, "content": "$$C_{\\text{no-cache}}(T)=\\sum_{t=1}^{T} t = \\frac{T(T+1)}{2}, \\qquad C_{\\text{cache}}(T)=\\sum_{t=1}^{T} 1 = T$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式直觉", "labelTitle": "其中", "text": "$T$ 是已生成 token 数。左式表示不用 KV Cache 时，第 1 步算 1 次、第 2 步算 2 次，直到第 $T$ 步；右式表示用了 KV Cache 后，每步只新增 1 份 $K_t,V_t$。"},
+        {"type": "divider", "layer": 1},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "玩具模型", "labelTitle": "5 个 token 的脑内演算", "text": "假设前 4 个 token 的缓存已经在显存里。现在要生成第 5 个 token，你只需要把第 5 个 token 乘一次 $W_Q,W_K,W_V$ 得到 $q_5,k_5,v_5$，然后用 $q_5$ 去和缓存里的 $K_{1:5}$ 做打分，再对缓存里的 $V_{1:5}$ 做加权求和。真正被复用的是旧 token 的表示，而不是注意力结果本身。"},
+        {"type": "formula", "layer": 2, "content": "$$\\alpha_5 = \\operatorname{softmax}\\!\\left(\\frac{q_5 K_{1:5}^{\\top}}{\\sqrt{d_k}}\\right), \\qquad o_5 = \\alpha_5 V_{1:5}$$"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "KV Cache 节省的是重复计算，但它会把瓶颈转成显存占用。上下文越长、batch 越大，缓存越容易比参数本体还重。也因此 GQA/MQA、PagedAttention、Prefix Caching 往往要和 KV Cache 一起出现，而不是单独谈。"},
+        {"type": "table", "layer": 2, "headers": ["场景", "不缓存", "用 KV Cache", "结论"], "rows": [["生成第 5 个 token", "重算前 1\u20134 个 token 的 K/V", "只算第 5 个 token 的 K/V", "单步延迟更稳"], ["上下文从 4K 拉到 32K", "重复计算量急剧上升", "重复计算基本不变", "长上下文收益更大"], ["显存占用", "低", "高", "必须配合显存管理"]]},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "时效提示", "labelTitle": "截至 2026-03 的工程判断", "text": "主流线上推理框架通常默认把 KV Cache 当作基础设施，而不是可选优化。真正拉开差距的点在于缓存怎么排布：PagedAttention 把缓存切成固定块以减少碎片，Prefix Caching 则让公共 system prompt 前缀直接复用。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：KV Cache 为什么能明显降低自回归延迟？\n\n答：因为自回归生成里旧 token 的 $K,V$ 在下一步不会变，缓存后每一步只新增当前 token 的投影，不再重算整段前缀。计算图从“重复扫历史”变成“只处理增量”。\n\n面试官追问：它的代价是什么？\n\n答：代价是显存线性增长，所以长上下文场景必须同时考虑 GQA/MQA、PagedAttention 和缓存淘汰策略。"},
+        {"type": "code", "layer": 3, "title": "从零理解缓存追加", "content": "import torch\n\ndef append_kv_cache(x_t, W_q, W_k, W_v, K_cache, V_cache):\n    q_t = x_t @ W_q  # 当前步只为新 token 生成查询\n    k_t = x_t @ W_k  # 旧 token 的键已经稳定，所以只补最新一行\n    v_t = x_t @ W_v  # 旧 token 的值同样直接复用\n    K_all = torch.cat([K_cache, k_t], dim=0)  # 把新键追加到历史缓存末尾\n    V_all = torch.cat([V_cache, v_t], dim=0)  # 把新值追加到历史缓存末尾\n    scores = q_t @ K_all.T / (q_t.shape[-1] ** 0.5)  # 现在只需要算当前查询对整段历史的打分\n    probs = torch.softmax(scores, dim=-1)  # 概率归一化后才能做加权汇总\n    out = probs @ V_all  # 输出由当前查询从历史值里读出来\n    return out, K_all, V_all"}
+      ]
+    },
+    {
+      "id": "speculative-decoding",
+      "title": "投机解码：把串行生成改成“先起草，再验收”",
+      "subtitle": "真题：为什么 draft/verify 能提速，还能保持与大模型分布对齐？",
+      "icon": "🎯",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "是什么，解决什么问题", "text": "痛点不是算不出来，而是太串行。普通自回归一次只能确认 1 个 token，大模型的下一步必须等上一步完成，这让解码延迟很难继续降。投机解码的做法是：先让小模型 draft 一串候选 token，再让大模型一次性 verify。它解决的是 decode 阶段的串行瓶颈。反事实：如果继续严格一步一 token 地跑，再快的 GPU 也会被串行依赖卡住。"},
+        {"type": "formula", "layer": 1, "content": "$$r_i = \\min\\!\\left(1, \\frac{p_i(\\tilde{x}_i)}{q_i(\\tilde{x}_i)}\\right), \\qquad \\mathbb{E}[\\text{accepted tokens per round}] \\approx \\alpha k$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式直觉", "labelTitle": "其中", "text": "$q_i$ 是 draft 模型在位置 $i$ 给出的分布，$p_i$ 是 target 模型的分布，$\\tilde{x}_i$ 是 draft token，$r_i$ 是接受概率，$k$ 是一次 draft 的步数，$\\alpha$ 是平均接受率。接受率越高，一轮 verify 能“白赚”越多 token。"},
+        {"type": "divider", "layer": 1},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "玩具模型", "labelTitle": "3 个候选 token 的验收过程", "text": "设 draft 一次提了 3 个 token：$[A,B,C]$。target 检查后发现 $A,B$ 的概率和自己很接近，于是接受；到 $C$ 时 target 认为 draft 太自信了，于是拒绝，并从修正分布重新采样一个 token 替代。于是这一轮虽然没有全收，但仍然比老老实实跑 3 次大模型前向更划算。"},
+        {"type": "formula", "layer": 2, "content": "$$p_i^{\\text{corr}}(x)=\\frac{\\max\\!\\bigl(0,\\, p_i(x)-q_i(x)\\bigr)}{1-\\sum_y \\min\\!\\bigl(p_i(y),q_i(y)\\bigr)}$$"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "投机解码不是“随便找个小模型帮忙猜”就会更快。若 draft 太差，接受率低，大模型仍要频繁重采样，甚至会比普通解码更慢。速度来自“高接受率 + 低 draft 成本”，不是来自多加一个模型本身。"},
+        {"type": "table", "layer": 2, "headers": ["方案", "草稿来源", "优势", "局限"], "rows": [["经典 Speculative Decoding", "独立 draft 模型", "理论最清楚，易解释", "要额外维护一套模型"], ["Medusa", "目标模型外挂多步预测头", "显存增量小", "接受率更依赖训练质量"], ["EAGLE 类方案", "轻量草稿头/特征草稿", "工程上更省模型管理", "实现更复杂"]]},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "时效提示", "labelTitle": "截至 2026-03 的工程判断", "text": "投机解码仍主要服务低延迟交互，而不是极端吞吐场景。因为 batch 很大时，target 模型本身的并行度已被吃满，draft/verify 带来的额外调度并不一定划算。2024-2026 的热点更多落在 self-speculative、Medusa、EAGLE 这类减少额外模型管理成本的变体。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：投机解码为什么既能提速，又能保证输出分布不偏离 target 模型？\n\n答：因为它不是无脑接受 draft token，而是按 $\\min(1,p/q)$ 做接受，再在拒绝点从修正分布补采样。这样最终边际分布仍然对齐 target，只是把多个位置的验证合并到一轮前向里。\n\n面试官追问：什么情况下它不值得用？\n\n答：当接受率低、draft 成本高，或者服务已经是大 batch 吞吐优先时，额外的 draft/verify 调度可能抵消收益。"},
+        {"type": "code", "layer": 3, "title": "接受-拒绝的最小骨架", "content": "import math\nimport random\n\ndef accept_token(p_token, q_token):\n    ratio = p_token / max(q_token, 1e-12)  # 用 p/q 衡量 target 是否同意 draft 的自信度\n    accept_prob = min(1.0, ratio)  # 接受率大于 1 没意义，所以截断到 1\n    return random.random() < accept_prob  # 只有被接受的草稿 token 才能跳过一次 target 单步生成\n\ndef accepted_count(p_list, q_list):\n    count = 0\n    for p_token, q_token in zip(p_list, q_list):\n        if accept_token(p_token, q_token):\n            count += 1  # 每多接受一个 token，就少一次串行等待\n        else:\n            break  # 一旦拒绝，就要回到 target 分布重新采样\n    return count"}
+      ]
+    },
+    {
+      "id": "quantization",
+      "title": "量化：先把模型装进去，推理才谈得上开始",
+      "subtitle": "真题：为什么 FP16 太大，INT8/INT4 又为什么会掉精度？",
+      "icon": "🗜️",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "是什么，解决什么问题", "text": "痛点先落地：如果权重都用 FP16/BF16 存，很多模型连单机显存都放不下，更别说给 KV Cache 留空间。量化就是用更少 bit 表示近似权重，把“装不下”先变成“能部署”。反事实：不量化时，参数刚装满 GPU，解码一开始就会被 KV Cache 挤爆，工程上根本跑不起来。"},
+        {"type": "formula", "layer": 1, "content": "$$w_q = \\operatorname{clip}\\!\\left(\\operatorname{round}\\!\\left(\\frac{w}{s}\\right), -q_{\\max}, q_{\\max}\\right), \\qquad \\hat{w}=s\\,w_q$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式直觉", "labelTitle": "其中", "text": "$w$ 是原始权重，$s$ 是量化 scale，$q_{\\max}=127$ 对应 INT8、$q_{\\max}=7$ 对应对称 INT4，$w_q$ 是离散整数，$\\hat{w}$ 是反量化后的近似权重。bit 越少，模型越小，但舍入误差也越大。"},
+        {"type": "divider", "layer": 1},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "玩具模型", "labelTitle": "4-bit 为什么怕异常值", "text": "设一组权重是 $[0.1,0.2,0.3,1.6]$，用对称 INT4 时 $s=1.6/7\\approx0.229$。于是 $0.1/0.229\\approx0.44$ 会被 round 成 0，细小权重直接消失；而 1.6 则恰好占满最大桶。这个玩具例子展示了量化最核心的风险：少数大值会把整个尺度拉大，让大量普通值失去分辨率。"},
+        {"type": "formula", "layer": 2, "content": "$$|\\hat{w}-w| \\le \\frac{s}{2}, \\qquad \\text{size}_{\\text{INT4}} = \\frac{4}{16} \\text{size}_{\\text{BF16}} = 0.25 \\, \\text{size}_{\\text{BF16}}$$"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "模型缩小 4 倍，不代表端到端速度一定提升 4 倍。W4A16 主要缓解 decode 的带宽压力；到了 prefill，若内核仍把权重反量化回高精度再算，速度提升会远小于显存节省。真正能同时帮到算力利用率的是 W8A8 这类更易匹配硬件 kernel 的方案。"},
+        {"type": "table", "layer": 2, "headers": ["方法", "核心想法", "典型精度", "截至 2026-03 的常见定位"], "rows": [["GPTQ", "逐列量化并补偿误差", "W4A16", "离线 PTQ，部署成熟"], ["AWQ", "优先保护高激活通道", "W4A16", "生产中很常见"], ["SmoothQuant", "把激活异常值平滑进权重", "W8A8", "更适合追求 kernel 友好"], ["QAT", "训练期显式模拟量化误差", "依任务而定", "精度最好但成本最高"]]},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "时效提示", "labelTitle": "截至 2026-03 的工程判断", "text": "在通用 LLM 服务里，W4A16 仍是“先省显存再谈吞吐”的常见折中；如果目标是更稳定地吃到硬件加速，W8A8 或更贴近硬件 kernel 的量化格式通常更有优势。面试里别只背 AWQ/GPTQ 名字，关键是说清它们分别在“保护谁的精度”。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么激活量化通常比权重量化更难？\n\n答：因为权重是离线固定张量，可以先统计再量化；激活是运行时动态产生的，还常带异常值，scale 很容易被少数大值劫持。\n\n面试官追问：AWQ 和 GPTQ 的思路差别是什么？\n\n答：GPTQ 更像“量化后再补偿误差”，AWQ 更像“先识别重要通道，再尽量别伤到它们”。"},
+        {"type": "code", "layer": 3, "title": "最小线性量化示意", "content": "import torch\n\ndef symmetric_int4_quantize(w):\n    scale = w.abs().max() / 7.0  # 4-bit 对称量化只有 -8 到 7 这 16 个桶\n    q = torch.round(w / scale).clamp(-8, 7)  # 先缩放再舍入，得到离散整数\n    w_hat = q * scale  # 推理时要反量化回近似浮点值参与矩阵乘\n    return q.to(torch.int8), scale, w_hat  # 用 int8 容器承载 int4 值是常见工程做法"}
+      ]
+    },
+    {
+      "id": "prefill-vs-decode",
+      "title": "Prefill vs Decode：先分清阶段，再谈优化是否有效",
+      "subtitle": "真题：为什么同一个优化在两个阶段的收益完全不同？",
+      "icon": "🔄",
+      "blocks": [
+        {"type": "kitem", "layer": 1, "labelType": "core", "badge": "核心考点", "labelTitle": "是什么，解决什么问题", "text": "很多推理讨论之所以混乱，是因为把 Prefill 和 Decode 当成了同一种计算。Prefill 负责把整段 prompt 一次性吃进去并建立初始 KV Cache；Decode 负责之后逐 token 续写。区分这两个阶段，解决的是“为什么某个优化在线上明明有效、换个指标却突然没效果”的困惑。反事实：若不区分阶段，你会误以为量化、投机解码、Continuous Batching 对所有延迟指标都同样有用。"},
+        {"type": "formula", "layer": 1, "content": "$$T_{\\text{prefill}} \\propto \\frac{\\text{FLOPs}(N)}{\\text{compute}}, \\qquad T_{\\text{decode/token}} \\propto \\frac{|\\theta| + |KV_t|}{\\text{bandwidth}}$$"},
+        {"type": "kitem", "layer": 1, "labelType": "formula", "badge": "公式直觉", "labelTitle": "其中", "text": "$N$ 是 prompt 长度，$|\\theta|$ 是模型参数字节数，$|KV_t|$ 是第 $t$ 步需要读写的缓存大小。Prefill 更像“算力问题”，Decode 更像“搬运问题”。"},
+        {"type": "divider", "layer": 1},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "玩具模型", "labelTitle": "两个用户，两个完全不同的瓶颈", "text": "用户 A 发来 8K prompt，只要 16 个输出 token；用户 B 只发 20 个 token，却要生成 1K token。A 的痛点主要在 Prefill：首 token 前等待长。B 的痛点主要在 Decode：每个 token 都慢，累积总时长更难受。这个玩具场景说明：FlashAttention、张量并行更偏向救 A，KV Cache、量化、投机解码更偏向救 B。"},
+        {"type": "formula", "layer": 2, "content": "$$\\text{TTFT} = T_{\\text{queue}} + T_{\\text{prefill}} + T_{\\text{decode-first}}, \\qquad \\text{TPS} = \\frac{\\text{generated tokens}}{T_{\\text{decode-total}}}$$"},
+        {"type": "trap", "layer": 2, "title": "⚠️ 反直觉结论", "content": "W4A16 量化常常对 Decode 更友好，却不一定明显改善长 prompt 的首 token 延迟；投机解码能降每 token 延迟，却几乎不碰 Prefill；Continuous Batching 能显著提吞吐，却可能不改善单请求体感。面试里最容易拉开差距的地方，就是把优化手段和指标精确对上。"},
+        {"type": "table", "layer": 2, "headers": ["优化", "更偏向哪个阶段", "主要改善什么", "为什么"], "rows": [["FlashAttention", "Prefill", "TTFT", "减少长序列注意力的 I/O 开销"], ["KV Cache", "Decode", "每 token 延迟", "避免重算旧前缀"], ["投机解码", "Decode", "每 token 延迟", "把多步验证并到一次大模型前向"], ["W4A16 量化", "Decode", "带宽压力", "减少权重搬运量"], ["Continuous Batching", "Decode", "吞吐", "减少 batch 空洞"], ["PD 分离", "两阶段一起", "资源利用率", "把算力瓶颈和带宽瓶颈拆开调度"]]},
+        {"type": "kitem", "layer": 2, "labelType": "detail", "badge": "时效提示", "labelTitle": "截至 2026-03 的工程判断", "text": "线上系统越来越倾向于把 TTFT、TPS、并发上限分开优化。vLLM/SGLang 一类框架通常结合 PagedAttention 与 Continuous Batching；更前沿的部署会进一步做 PD 分离，把 Prefill 和 Decode 放到不同资源池。"},
+        {"type": "memory", "layer": 3, "title": "💡 面试自测", "content": "面试官问：为什么你说“先分清 Prefill 和 Decode，再谈优化”？\n\n答：因为两阶段的瓶颈不同，Prefill 更吃算力，Decode 更吃带宽。同一个优化可能只改善 TTFT、只改善 tokens/s，或者只改善吞吐，不把指标和阶段对齐就会得出错误结论。\n\n面试官追问：如果要设计高吞吐 LLM 服务，你会怎么答？\n\n答：我会先说明目标指标，再组合阶段化优化：Prefill 侧看 FlashAttention/并行，Decode 侧看 KV Cache、量化、Continuous Batching、必要时投机解码，再决定是否做 PD 分离。"},
+        {"type": "code", "layer": 3, "title": "把指标拆开算", "content": "def inference_metrics(queue_time, prefill_time, first_decode_time, decode_total_time, tokens):\n    ttft = queue_time + prefill_time + first_decode_time  # 首 token 延迟必须把排队和 prefill 一起算进去\n    tps = tokens / max(decode_total_time, 1e-9)  # 吞吐只看 decode 总时间更贴近续写体验\n    return {\"TTFT\": ttft, \"TPS\": tps}  # 把指标拆开，才能判断优化到底命中了哪个阶段"}
+      ]
+    }
+  ]
+}

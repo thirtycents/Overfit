@@ -1,0 +1,299 @@
+{
+  "id": "ch-llm-alignment",
+  "title": "LLM 对齐与偏好优化",
+  "tag": "alignment",
+  "tagLabel": "SFT / RLHF / DPO / GRPO",
+  "desc": "从 SFT 冷启动到 RLHF、DPO、GRPO，按面试高频路径重写 LLM 对齐章节；对 2024-2026 热点方法全部加时间锚点。",
+  "taxonomy": null,
+  "cards": [
+    {
+      "id": "sft-alignment-tax",
+      "title": "SFT：先把模型变成会按指令说话的助手",
+      "subtitle": "真题：为什么所有对齐流程都先做 SFT？什么叫 alignment tax？",
+      "icon": "🧭",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "冷启动",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "预训练模型只会续写下一个 token：你让它“请按 JSON 输出”，它也可能继续写散文。先把“会续写”拉成“会按指令回答”，这一步叫 SFT（Supervised Fine-Tuning）。如果不先做 SFT，后续 RLHF 或 DPO 会在巨大的回答空间里盲搜，奖励信号再好也很难稳定收敛。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$L_{\\text{SFT}} = -\\frac{1}{T} \\sum_{t=1}^{T} \\log \\pi_{\\theta}(y_t \\mid x, y_{\\lt t})$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "推导直觉",
+          "labelTitle": "为什么只在回答 token 上算 loss",
+          "text": "玩具模型里，prompt 长度设为 3，answer 长度设为 2。若前 3 个 prompt token 也纳入损失，梯度会推动模型更会“复述题目”，而不是更会“回答问题”；因此实践里把 prompt 标签置为 -100，只在 answer 段反向传播。模型为了更安全、更服从而牺牲部分原始自由度或 benchmark 能力，这个代价叫 alignment tax。InstructGPT（2022）和 Constitutional AI（2022/2023）都说明了同一个现实：更可控，往往就更保守。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方法", "反馈来源", "优点", "代价"],
+          "rows": [
+            ["SFT", "演示答案", "最稳、最便宜", "只会模仿，不会比较好坏"],
+            ["Constitutional AI（2022/2023）", "规则宪法 + AI 自评", "减少人工标注", "规则写得差会把偏差制度化"],
+            ["偏好优化", "偏好对或奖励", "能学会“哪个更好”", "工程更复杂"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反事实",
+          "content": "没有 SFT 冷启动时，偏好优化经常只会放大奖励噪声：模型学到的不是“更好回答”，而是“更像高分作弊样本”。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 SFT 是 RLHF / DPO 的前置步骤？\n\n答：SFT 先把策略限制到“会按指令回答”的子空间，后续偏好优化只需要在合理候选之间排序，而不是在整个语言空间里盲搜。追问 alignment tax 时，可以回答：模型为了更安全、更服从，会牺牲一部分原始开放性或 benchmark 峰值。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "response-only loss 掩码",
+          "content": "import torch\n\ndef build_sft_labels(prompt_ids, answer_ids):\n    # prompt 不参与损失，避免模型把梯度浪费在“复述题目”上\n    ignore = torch.full_like(prompt_ids, -100)\n    # 只有 answer 部分才是真正希望模型学会生成的目标\n    return torch.cat([ignore, answer_ids], dim=1)"
+        }
+      ]
+    },
+    {
+      "id": "rlhf-ppo",
+      "title": "RLHF：把“人更喜欢哪个回答”变成可优化信号",
+      "subtitle": "真题：RLHF 为什么要奖励模型和 KL 约束？reward hacking 怎么来的？",
+      "icon": "🎯",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "主流程",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "SFT 只能教模型模仿示范答案，却回答不了“两个都能用时，哪个更好”。把人类偏好变成训练信号的流程，叫 RLHF（Reinforcement Learning from Human Feedback）。经典链路由 InstructGPT（2022）定型：SFT 冷启动 → 奖励模型（Reward Model）学习偏好 → PPO 在 KL 约束下更新策略。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\begin{aligned}P(y_w \\succ y_l \\mid x) &= \\sigma\\big(r_{\\phi}(x,y_w)-r_{\\phi}(x,y_l)\\big)\\\\J(\\pi_{\\theta}) &= \\mathbb{E}[r_{\\phi}(x,y)] - \\beta \\, \\mathrm{KL}(\\pi_{\\theta} \\| \\pi_{\\mathrm{ref}})\\end{aligned}$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "关键直觉",
+          "labelTitle": "为什么需要奖励模型和 KL",
+          "text": "奖励模型用 Bradley-Terry 偏好概率把“chosen 比 rejected 更好”压缩成一个标量分数；PPO 再最大化这个分数。但如果没有 KL 惩罚，策略会为了讨好奖励模型而偏离 SFT 分布，学出“看起来高分、实际上很怪”的回答，这就叫 reward hacking。工程上常见的四个角色是 Actor、Critic、Reward Model、Reference Model；也正因为要同时维护四份模型，RLHF 的显存和调参成本一直很高。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["组件", "是否训练", "作用", "不带它会怎样"],
+          "rows": [
+            ["Actor", "✅", "生成回答并被优化", "没有主体可更新"],
+            ["Critic", "✅", "估计优势，降低方差", "只能退化成高方差 REINFORCE"],
+            ["Reward Model", "✅ 先训后冻", "近似人类偏好", "无法把偏好排序变成连续分数"],
+            ["Reference Model", "❄️ 冻结", "提供 KL 锚点", "更容易 reward hacking"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "奖励越高不一定回答越好。只要奖励模型有盲区，策略就可能学会“骗分”而不是“对齐”。因此 RLHF 的难点常常不是优化器，而是奖励设计和分布约束。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 RLHF 里必须加 KL？\n\n答：因为奖励模型只是人类偏好的近似器，不是地面真相。KL 把策略拉回 SFT 参考分布，防止模型为了局部高分离开正常语言分布，出现 reward hacking。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "句子级 KL 奖励",
+          "content": "def kl_shaped_reward(rm_score, logp_policy, logp_ref, beta=0.02):\n    # KL 项惩罚策略偏离 SFT 参考模型\n    kl = logp_policy - logp_ref\n    # 奖励不是纯 RM 分数，而是“偏好分 - 偏离代价”\n    return rm_score - beta * kl.mean()"
+        }
+      ]
+    },
+    {
+      "id": "dpo",
+      "title": "DPO：不再显式训练奖励模型，直接学偏好",
+      "subtitle": "真题：DPO 如何绕过 Reward Model？它和 RLHF 在什么前提下近似等价？",
+      "icon": "📐",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "2023 热点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "RLHF 能提升偏好质量，但它要先训练奖励模型、再跑在线 RL，工程非常重。DPO（Direct Preference Optimization，Rafailov et al., 2023）把“学奖励”与“优化策略”合并成一步：直接让模型提高 chosen 的相对概率、压低 rejected 的相对概率，因此只保留 policy 和 reference 两份模型。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$L_{\\text{DPO}} = -\\log \\sigma\\Big(\\beta \\big[\\log \\tfrac{\\pi_{\\theta}(y_w|x)}{\\pi_{\\mathrm{ref}}(y_w|x)} - \\log \\tfrac{\\pi_{\\theta}(y_l|x)}{\\pi_{\\mathrm{ref}}(y_l|x)}\\big]\\Big)$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "推导主线",
+          "labelTitle": "为什么可以消去奖励模型",
+          "text": "在带 KL 约束的最优策略里，$\\pi^*(y|x) \\propto \\pi_{ref}(y|x) e^{r(x,y)/\\beta}$。把这个闭式解反推回去，奖励差就能写成对数概率比的差，于是 Bradley-Terry 偏好损失里原本的奖励项被消掉，只剩 policy 与 reference 的相对偏好。DPO 的关键前提不是“永远优于 RLHF”，而是“当前偏好数据足够代表目标分布，且参考策略质量不太差”。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["维度", "RLHF + PPO", "DPO"],
+          "rows": [
+            ["模型份数", "Actor + Critic + RM + Ref", "Policy + Ref"],
+            ["训练形态", "在线 RL", "离线偏好优化"],
+            ["稳定性", "更难调", "通常更稳"],
+            ["探索能力", "可生成新样本", "受限于静态数据集"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反事实",
+          "content": "DPO 不是“免费午餐”。如果偏好数据窄、参考模型弱，DPO 只会把静态数据里的偏差固化得更深；它省掉的是在线 RL 成本，不是分布外泛化难题。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：DPO 为什么能绕过 Reward Model？\n\n答：因为在 KL 正则化的 RL 目标下，最优策略可以写成 reference 概率与奖励指数的乘积，奖励差等价于 chosen / rejected 的对数概率比差。于是偏好学习可以直接作用在策略参数上，不必显式训练一个独立 Reward Model。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "DPO 核心 loss",
+          "content": "import torch\nimport torch.nn.functional as F\n\ndef dpo_loss(pi_logp_w, pi_logp_l, ref_logp_w, ref_logp_l, beta=0.1):\n    # chosen 和 rejected 的“相对优势”都要相对于 reference 计算\n    margin = (pi_logp_w - ref_logp_w) - (pi_logp_l - ref_logp_l)\n    # margin 越大，chosen 相对 rejected 就越占优\n    return -F.logsigmoid(beta * margin).mean()"
+        }
+      ]
+    },
+    {
+      "id": "rlhf-vs-dpo",
+      "title": "RLHF vs DPO：面试官真正想问的是“什么时候选哪一个”",
+      "subtitle": "真题：DPO 会取代 RLHF 吗？截至 2026-03，工程上怎么选？",
+      "icon": "⚖️",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "必考对比",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "团队最常遇到的不是“懂不懂 RLHF”，而是“预算、数据、风险给定时该选 RLHF 还是 DPO”。这个选择本质上是在“在线探索能力”与“离线训练稳定性”之间取舍：RLHF 更重，但能持续探索；DPO 更轻，但主要吃静态偏好数据。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$\\begin{aligned}J_{\\text{RLHF}} &= \\mathbb{E}[r(x,y)] - \\beta \\mathrm{KL}(\\pi_{\\theta} \\| \\pi_{ref})\\\\L_{\\text{DPO}} &= -\\log \\sigma\\big(\\beta \\Delta \\log \\pi_{\\theta,ref}\\big)\\end{aligned}$$"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["问题", "RLHF 更优", "DPO 更优"],
+          "rows": [
+            ["你需要新探索轨迹吗？", "✅ 可以边采样边学", "❌ 主要依赖现成偏好集"],
+            ["你显存和工程预算紧吗？", "❌ 四模型更重", "✅ 两模型更省"],
+            ["你关心分布外拒答/安全边界吗？", "✅ 显式 RM 更好插规则", "⚠️ 通常较弱"],
+            ["你要快速迭代一个对话助手吗？", "⚠️ 调参更慢", "✅ 往往是第一选择"]
+          ]
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "截至 2026-03",
+          "labelTitle": "行业判断",
+          "text": "截至 2026-03，很多通用聊天模型的“首轮偏好对齐”更偏向 DPO 或其变体，因为它便宜、稳、上线快；但高风险场景、安全边界控制强、或需要持续在线探索的系统，RLHF 仍然没有被完全替代。面试里最稳的回答不是“DPO 已经淘汰 RLHF”，而是“DPO 替代了 RLHF 的一部分工程路径，但没有替代在线探索与显式奖励建模的需求”。"
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "很多候选人会把“DPO 更简单”误说成“DPO 更先进”。真正的结论是：DPO 只是把问题搬到了数据质量和 reference 质量上；当你需要新行为涌现时，在线 RL 依然更有武器。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：DPO 会彻底取代 RLHF 吗？\n\n答：不会。DPO 擅长低成本、稳定地吃静态偏好数据；RLHF 擅长在线探索、显式奖励建模和更强的分布约束。最佳实践通常不是二选一，而是按阶段组合使用。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "训练路线选择器",
+          "content": "def choose_alignment_method(has_pairwise_data, needs_online_exploration, gpu_budget_tight):\n    # 需要在线探索时，优先保留 RLHF 能力\n    if needs_online_exploration:\n        return 'RLHF'\n    # 只有静态偏好集且预算紧时，DPO 往往是更现实的工程选择\n    if has_pairwise_data and gpu_budget_tight:\n        return 'DPO'\n    # 默认回答体现“按约束选方法”，而不是教条站队\n    return 'stage-wise hybrid'"
+        }
+      ]
+    },
+    {
+      "id": "grpo-reasoning",
+      "title": "GRPO：为推理模型省掉 Critic，让在线 RL 重新变便宜",
+      "subtitle": "真题：为什么 DeepSeek-R1（2025）选择 GRPO？DAPO / GSPO 又是在修什么问题？",
+      "icon": "🧠",
+      "blocks": [
+        {
+          "type": "kitem",
+          "layer": 1,
+          "labelType": "core",
+          "badge": "2024-2025 热点",
+          "labelTitle": "是什么，解决什么问题",
+          "text": "DPO 便宜，但它不擅长生成全新的推理轨迹；PPO 能在线探索，却要维护 Critic。对数学、代码、可验证推理任务，人们开始用组内相对比较替代 Critic，这条路线叫 GRPO（Group Relative Policy Optimization，2024），并在 DeepSeek-R1（2025）上被广泛讨论。"
+        },
+        {
+          "type": "formula",
+          "layer": 1,
+          "content": "$$A_i = \\frac{r_i - \\mu_r}{\\sigma_r + \\epsilon}, \\qquad L_{\\text{GRPO}} = \\frac{1}{G} \\sum_{i=1}^{G} \\min(\\rho_i A_i, \\operatorname{clip}(\\rho_i, 1-\\varepsilon, 1+\\varepsilon)A_i)$$"
+        },
+        {
+          "type": "kitem",
+          "layer": 2,
+          "labelType": "detail",
+          "badge": "关键直觉",
+          "labelTitle": "为什么 GRPO 不需要 Critic",
+          "text": "对同一题目一次采样 G 条回答，再用组内均值和标准差把奖励做标准化，谁明显更好谁的优势就更大。因为 baseline 直接来自“同题其他回答”，GRPO 不必单独训练一个价值网络。它特别适合有可验证 reward 的场景，例如代码单测通过率、数学答案验证器、规则格式检查。缺点也很直接：如果奖励函数本身很脆弱，模型一样会朝着规则漏洞冲刺。"
+        },
+        {
+          "type": "table",
+          "layer": 2,
+          "headers": ["方法", "时间锚点", "修复的问题", "代价"],
+          "rows": [
+            ["GRPO", "2024", "去掉 Critic，降低在线 RL 成本", "奖励全对/全错时梯度会塌"],
+            ["DeepSeek-R1 路线", "2025", "证明可验证推理奖励能驱动强推理行为", "强依赖题目与验证器质量"],
+            ["DAPO", "2025", "修正正样本被过度裁剪、样本饱和", "更复杂的 clip 与过滤规则"],
+            ["GSPO", "2025", "缓解长序列重要性比失真", "实现细节更重"]
+          ]
+        },
+        {
+          "type": "trap",
+          "layer": 2,
+          "title": "⚠️ 反直觉结论",
+          "content": "推理模型里最危险的不是“没有人类标注”，而是“验证器太窄”。只要奖励只看最终答案，不看推理过程，模型就可能学会投机格式或短路策略，这仍然是一种 reward hacking。"
+        },
+        {
+          "type": "memory",
+          "layer": 3,
+          "title": "💡 面试自测",
+          "content": "面试官问：为什么 DeepSeek-R1 风格训练会选 GRPO？\n\n答：因为推理任务往往有可验证奖励，GRPO 可以用组内相对优势替代 Critic，保留在线探索，同时把显存和工程成本压到比 PPO 更低。继续追问时可以补一句：DAPO、GSPO 都是在修 GRPO 的裁剪偏差和长序列稳定性问题。"
+        },
+        {
+          "type": "code",
+          "layer": 3,
+          "title": "组内优势标准化",
+          "content": "import torch\n\ndef grpo_advantage(rewards):\n    # rewards: (batch, group)；同一道题的多条回答放在同一组\n    mean = rewards.mean(dim=1, keepdim=True)\n    # 组内标准差相当于“同题 baseline”，因此不需要额外 Critic\n    std = rewards.std(dim=1, keepdim=True)\n    return (rewards - mean) / (std + 1e-8)"
+        }
+      ]
+    }
+  ]
+}
