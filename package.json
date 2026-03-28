@@ -1,0 +1,39 @@
+{
+  "name": "overfit",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test --pass-with-no-tests",
+    "validate-content": "node ./tools/validate-content.mjs",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "latest",
+    "d3": "latest",
+    "dexie": "latest",
+    "fuse.js": "latest",
+    "katex": "latest",
+    "pinia": "latest",
+    "shiki": "latest",
+    "ts-fsrs": "latest",
+    "vaul-vue": "latest",
+    "vite": "latest",
+    "vue": "latest",
+    "vue-router": "latest",
+    "@vitejs/plugin-vue": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "@vue/test-utils": "latest",
+    "eslint": "latest",
+    "playwright": "latest",
+    "vitest": "latest"
+  }
+}

@@ -1,66 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI/算法岗备考知识手册</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-
-<div class="layout">
-
-  <!-- ===== SIDEBAR ===== -->
-  <div class="sidebar">
-    <div class="sidebar-logo">
-      <div class="title">AI/算法岗备考<br>知识手册</div>
-      <div class="sub">横向扩展 · 举一反三 · 考点全覆盖</div>
-      <div class="progress-bar progress-bar--sidebar">
-        <div class="fill" style="width:0%"></div>
-      </div>
-      <div class="sidebar-meta">10 大模块 · 持续更新</div>
-    </div>
-    <div class="sidebar-search">
-      <input type="text" id="searchInput" placeholder="🔍  搜索知识点..." oninput="doSearch(this.value)">
-    </div>
-    <div class="sidebar-nav" id="sidebarNav">
-      <!-- 由 engine.js 动态生成 -->
-    </div>
-  </div>
-
-  <!-- ===== MAIN ===== -->
-  <div class="main">
-    <div class="top-bar">
-      <h2 id="topBarTitle">AI/算法岗备考知识手册</h2>
-      <div class="stats">
-        <span>🎯 <b class="stat-strong">60+</b> 核心考点</span>
-        <span>🔄 持续扩写</span>
-      </div>
-    </div>
-
-    <!-- 搜索结果区 -->
-    <div id="searchResults">
-      <div id="searchContent"></div>
-    </div>
-
-    <!-- 章节内容区 -->
-    <div id="chapterContainer">
-      <!-- 由 engine.js 动态渲染 -->
-    </div>
-  </div>
-
-  <aside class="toc-panel" id="chapterTocPanel" aria-label="当前章节目录">
-    <div class="toc-panel-inner">
-      <div class="toc-title">本章导览</div>
-      <div id="chapterToc"></div>
-    </div>
-  </aside>
-
-</div>
-
-<script src="assets/engine.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overfit</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
 </html>
