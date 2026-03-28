@@ -1,3 +1,9 @@
+> ⚠️ **REWRITE IN PROGRESS** — Content authoring is FROZEN.
+> Do NOT add, edit, or delete any chapter files (`content/` or `public/content/`).
+> Do NOT run frontend verification against the legacy site.
+> Architecture reference: `.sisyphus/plans/enterprise-refactor.md`
+> This notice will be replaced with the new architecture spec when the rewrite completes (Task T25).
+
 # AI/ML Interview Prep Site — Agent Workbook
 
 ## Identity & Mission
